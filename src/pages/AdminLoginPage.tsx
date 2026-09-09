@@ -13,7 +13,9 @@ import {
   HelpCircle,
   CheckCircle2,
   ChevronDown,
-  Sparkles
+  Sparkles,
+  ExternalLink,
+  Globe
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { parseAuthError, AuthErrorDetails } from '../lib/firestoreService';
@@ -151,11 +153,39 @@ export const AdminLoginPage: React.FC = () => {
                   {errorDetails.category === 'too_many_requests' && 'Account Temporarily Locked'}
                   {errorDetails.category === 'popup_blocked' && 'Browser Popup Blocked'}
                   {errorDetails.category === 'cancelled' && 'Authentication Cancelled'}
+                  {errorDetails.category === 'unauthorized_domain' && 'Authorized Domain Required'}
                   {errorDetails.category === 'general' && 'Authentication Error'}
                 </span>
                 <p className="leading-relaxed">{errorDetails.message}</p>
               </div>
             </div>
+
+            {errorDetails.category === 'unauthorized_domain' && (
+              <div className="mt-2 pt-2 border-t border-rose-900/60 text-[11px] text-rose-300/95 leading-relaxed bg-rose-900/30 p-3 rounded-xl space-y-2">
+                <div className="flex items-center gap-1.5 font-semibold text-white">
+                  <Globe className="w-3.5 h-3.5 text-amber-400" />
+                  <span>How to authorize call-me1.vercel.app in Firebase:</span>
+                </div>
+                <ol className="list-decimal list-inside space-y-1 text-slate-200">
+                  <li>
+                    Open{' '}
+                    <a
+                      href="https://console.firebase.google.com/project/lexical-layout-8pthm/authentication/settings"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-rose-300 hover:text-white underline font-medium inline-flex items-center gap-1"
+                    >
+                      Firebase Console &gt; Authentication &gt; Settings
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </li>
+                  <li>Click the <strong>Authorized domains</strong> tab.</li>
+                  <li>Click <strong>Add domain</strong>.</li>
+                  <li>Enter exactly: <code className="bg-slate-900 px-1.5 py-0.5 rounded text-amber-300 font-mono font-bold">call-me1.vercel.app</code> (without https://).</li>
+                  <li>Click <strong>Save</strong> / <strong>Done</strong>.</li>
+                </ol>
+              </div>
+            )}
 
             {errorDetails.category === 'popup_blocked' && (
               <div className="mt-2 pt-2 border-t border-rose-900/60 text-[11px] text-rose-300/90 leading-relaxed bg-rose-900/20 p-2.5 rounded-xl">

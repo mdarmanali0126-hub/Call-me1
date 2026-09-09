@@ -145,25 +145,40 @@ app.post('/api/profiles/:slug/view', (req, res) => {
   res.status(404).json({ success: false, message: 'Profile not found' });
 });
 
+let advertisingSettings = {
+  slots: [
+    {
+      id: 'ad-header',
+      slotName: 'header_banner',
+      enabled: true,
+      sponsorName: 'The Royal Heritage Club',
+      title: 'Exclusive Matrimonial Concierge for Distinguished Professionals',
+      description: 'Handcrafted introductions, background verification, and private bespoke consultations.',
+      linkUrl: 'https://callme-matrimony.com/concierge',
+      ctaText: 'Inquire Privately',
+      badgeText: 'Curated Partner'
+    }
+  ],
+  ads: {
+    popunder: false,
+    socialBar: false,
+    banner: false
+  },
+  updatedAt: new Date().toISOString()
+};
+
 app.get('/api/settings/advertising', (req, res) => {
   res.json({
     success: true,
-    data: {
-      slots: [
-        {
-          id: 'ad-header',
-          slotName: 'header_banner',
-          enabled: true,
-          sponsorName: 'The Royal Heritage Club',
-          title: 'Exclusive Matrimonial Concierge for Distinguished Professionals',
-          description: 'Handcrafted introductions, background verification, and private bespoke consultations.',
-          linkUrl: 'https://callme-matrimony.com/concierge',
-          ctaText: 'Inquire Privately',
-          badgeText: 'Curated Partner'
-        }
-      ]
-    }
+    data: advertisingSettings
   });
+});
+
+app.post('/api/sync/advertising', requireAdminAuth, (req, res) => {
+  if (req.body) {
+    advertisingSettings = req.body;
+  }
+  res.json({ success: true, updated: true });
 });
 
 // Admin Protected Endpoints

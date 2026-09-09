@@ -151,6 +151,11 @@ app.get('/api/settings/advertising', (req, res) => {
       success: true,
       data: {
         slots: activeSlots,
+        ads: advertisingCache.ads || {
+          popunder: false,
+          socialBar: false,
+          banner: false
+        },
         updatedAt: advertisingCache.updatedAt
       }
     });

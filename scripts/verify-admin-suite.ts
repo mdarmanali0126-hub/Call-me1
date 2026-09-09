@@ -261,6 +261,32 @@ async function runSuite() {
   });
 
   // -------------------------------------------------------------------------
+  // Item 12: Verify call-me1.vercel.app in Firebase Authorized Domains
+  // -------------------------------------------------------------------------
+  try {
+    const liveRes = await httpGet(
+      `https://identitytoolkit.googleapis.com/v1/projects?key=${apiKey}`
+    );
+    const authorizedDomains: string[] = liveRes.body?.authorizedDomains || [];
+    const vercelAuthorized = authorizedDomains.includes('call-me1.vercel.app');
+    results.push({
+      id: 12,
+      item: 'Verify call-me1.vercel.app is registered in Firebase Authorized Domains',
+      status: vercelAuthorized ? 'PASSED' : 'ATTENTION_REQUIRED',
+      details: vercelAuthorized
+        ? 'PASSED: call-me1.vercel.app is authorized in Firebase Authentication for project lexical-layout-8pthm.'
+        : `ATTENTION REQUIRED: call-me1.vercel.app is not in the live authorized domains list (${authorizedDomains.join(', ')}). Add "call-me1.vercel.app" in Firebase Console > Authentication > Settings > Authorized domains.`,
+    });
+  } catch (err: any) {
+    results.push({
+      id: 12,
+      item: 'Verify call-me1.vercel.app is registered in Firebase Authorized Domains',
+      status: 'FAILED',
+      details: `Failed to query live project config: ${err.message}`,
+    });
+  }
+
+  // -------------------------------------------------------------------------
   // Output summary
   // -------------------------------------------------------------------------
   results.forEach((r) => {

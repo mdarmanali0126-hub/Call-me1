@@ -7,10 +7,14 @@ import { AdminLoginPage } from './pages/AdminLoginPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { AdminProfileEditPage } from './pages/AdminProfileEditPage';
 import { AdminProtectedRoute } from './components/AdminProtectedRoute';
+import { NetworkAdsLoader } from './components/NetworkAdsLoader';
 
 export default function App() {
   return (
     <BrowserRouter>
+      {/* Global Network Ads Controller (Popunder & Social Bar) */}
+      <NetworkAdsLoader />
+
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />

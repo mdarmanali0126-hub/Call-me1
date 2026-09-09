@@ -68,8 +68,15 @@ export interface AdSlot {
   badgeText?: string;
 }
 
+export interface NetworkAdSettings {
+  popunder: boolean;
+  socialBar: boolean;
+  banner: boolean;
+}
+
 export interface AdvertisingSettings {
   slots: AdSlot[];
+  ads?: NetworkAdSettings;
   updatedAt: string;
 }
 

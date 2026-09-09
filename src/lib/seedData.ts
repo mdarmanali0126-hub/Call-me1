@@ -303,5 +303,10 @@ export const INITIAL_ADVERTISING_SETTINGS: AdvertisingSettings = {
       badgeText: 'Partner'
     }
   ],
+  ads: {
+    popunder: false,
+    socialBar: false,
+    banner: false
+  },
   updatedAt: new Date().toISOString()
 };

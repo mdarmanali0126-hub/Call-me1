@@ -24,7 +24,12 @@ import {
   Clock,
   Activity,
   Database,
-  RefreshCw
+  RefreshCw,
+  Radio,
+  Megaphone,
+  Zap,
+  Globe,
+  Layout
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Profile, AdvertisingSettings, AnalyticsSummary } from '../types';
@@ -37,7 +42,7 @@ import {
   fetchTelemetrySummary,
   seedInitialDataIfEmpty
 } from '../lib/firestoreService';
-import { syncProfileToServer, syncDeleteProfileToServer, syncAdvertisingToServer } from '../lib/api';
+import { syncProfileToServer, syncDeleteProfileToServer, syncAdvertisingToServer, invalidateAdvertisingCache } from '../lib/api';
 import { StoryViewerModal } from '../components/StoryViewerModal';
 
 export const AdminDashboardPage: React.FC = () => {
@@ -143,6 +148,7 @@ export const AdminDashboardPage: React.FC = () => {
     try {
       await saveAdSettingsToFirestore(adSettings);
       await syncAdvertisingToServer(adSettings);
+      invalidateAdvertisingCache(adSettings);
       showToast('Advertising configuration updated and synced successfully.');
     } catch (err: any) {
       setActionError('Failed to save advertising: ' + err.message);
@@ -509,12 +515,12 @@ export const AdminDashboardPage: React.FC = () => {
 
         {/* TAB 2: ADVERTISING ARCHITECTURE */}
         {activeTab === 'advertising' && adSettings && (
-          <div className="space-y-6 max-w-4xl">
+          <div className="space-y-8 max-w-4xl">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-bold font-serif-luxury text-white">Advertising &amp; Sponsor Slots</h3>
+                <h3 className="text-xl font-bold font-serif-luxury text-white">Advertising Management</h3>
                 <p className="text-xs text-slate-400">
-                  Configure native partner slots served via the Express API endpoint (/api/settings/advertising).
+                  Control independent network ad formats and native sponsor placements across the platform.
                 </p>
               </div>
 
@@ -528,8 +534,206 @@ export const AdminDashboardPage: React.FC = () => {
               </button>
             </div>
 
-            <div className="space-y-6">
-              {adSettings.slots.map((slot, index) => (
+            {/* SECTION 1: NETWORK ADVERTISING FORMATS (ADSTERRA) */}
+            <div className="bg-slate-950/90 border border-slate-800 rounded-3xl p-6 sm:p-7 space-y-6 shadow-xl relative overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                    <Zap className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white text-sm">Adsterra &amp; Network Advertising Formats</h4>
+                    <p className="text-[11px] text-slate-400">
+                      Each ad format is independently controlled. When disabled, scripts and containers will not execute or load.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                    3 Independent Channels
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* 1. Popunder Ads */}
+                <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${
+                  adSettings.ads?.popunder
+                    ? 'bg-gradient-to-b from-amber-950/20 to-slate-900 border-amber-500/40 shadow-xs'
+                    : 'bg-slate-900/60 border-slate-800/80 opacity-80'
+                }`}>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-amber-400" />
+                        <span className="font-bold text-white text-xs">Popunder Ads</span>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        adSettings.ads?.popunder
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-slate-800 text-slate-400 border border-slate-700'
+                      }`}>
+                        {adSettings.ads?.popunder ? 'ON' : 'OFF'}
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Loads Popunder script on interaction. Prevents duplicate injection across navigations.
+                    </p>
+
+                    <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80 text-[10px] text-slate-400 font-mono truncate">
+                      pl31254996.profitableratecpm...
+                    </div>
+                  </div>
+
+                  <div className="pt-4 mt-2 border-t border-slate-800/60 flex items-center justify-between">
+                    <span className="text-xs text-slate-400 font-medium">Status</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentVal = !!adSettings.ads?.popunder;
+                        setAdSettings({
+                          ...adSettings,
+                          ads: {
+                            popunder: !currentVal,
+                            socialBar: adSettings.ads?.socialBar ?? false,
+                            banner: adSettings.ads?.banner ?? false
+                          }
+                        });
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        adSettings.ads?.popunder
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
+                          : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                      }`}
+                    >
+                      <span>{adSettings.ads?.popunder ? 'Enabled [ON]' : 'Disabled [OFF]'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Social Bar Ads */}
+                <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${
+                  adSettings.ads?.socialBar
+                    ? 'bg-gradient-to-b from-rose-950/20 to-slate-900 border-rose-500/40 shadow-xs'
+                    : 'bg-slate-900/60 border-slate-800/80 opacity-80'
+                }`}>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Megaphone className="w-4 h-4 text-rose-400" />
+                        <span className="font-bold text-white text-xs">Social Bar Ads</span>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        adSettings.ads?.socialBar
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-slate-800 text-slate-400 border border-slate-700'
+                      }`}>
+                        {adSettings.ads?.socialBar ? 'ON' : 'OFF'}
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Engaging floating social bar with rich push-style format without duplicate execution.
+                    </p>
+
+                    <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80 text-[10px] text-slate-400 font-mono truncate">
+                      pl31254997.profitableratecpm...
+                    </div>
+                  </div>
+
+                  <div className="pt-4 mt-2 border-t border-slate-800/60 flex items-center justify-between">
+                    <span className="text-xs text-slate-400 font-medium">Status</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentVal = !!adSettings.ads?.socialBar;
+                        setAdSettings({
+                          ...adSettings,
+                          ads: {
+                            popunder: adSettings.ads?.popunder ?? false,
+                            socialBar: !currentVal,
+                            banner: adSettings.ads?.banner ?? false
+                          }
+                        });
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        adSettings.ads?.socialBar
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
+                          : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                      }`}
+                    >
+                      <span>{adSettings.ads?.socialBar ? 'Enabled [ON]' : 'Disabled [OFF]'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Banner (320x50) */}
+                <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${
+                  adSettings.ads?.banner
+                    ? 'bg-gradient-to-b from-indigo-950/20 to-slate-900 border-indigo-500/40 shadow-xs'
+                    : 'bg-slate-900/60 border-slate-800/80 opacity-80'
+                }`}>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Layout className="w-4 h-4 text-indigo-400" />
+                        <span className="font-bold text-white text-xs">Banner (320x50)</span>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        adSettings.ads?.banner
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-slate-800 text-slate-400 border border-slate-700'
+                      }`}>
+                        {adSettings.ads?.banner ? 'ON' : 'OFF'}
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Rendered in centered, responsive container. Mobile-safe with no layout overflow.
+                    </p>
+
+                    <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80 text-[10px] text-slate-400 font-mono truncate">
+                      320x50 iframe | key: b5007...
+                    </div>
+                  </div>
+
+                  <div className="pt-4 mt-2 border-t border-slate-800/60 flex items-center justify-between">
+                    <span className="text-xs text-slate-400 font-medium">Status</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentVal = !!adSettings.ads?.banner;
+                        setAdSettings({
+                          ...adSettings,
+                          ads: {
+                            popunder: adSettings.ads?.popunder ?? false,
+                            socialBar: adSettings.ads?.socialBar ?? false,
+                            banner: !currentVal
+                          }
+                        });
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        adSettings.ads?.banner
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
+                          : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                      }`}
+                    >
+                      <span>{adSettings.ads?.banner ? 'Enabled [ON]' : 'Disabled [OFF]'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 2: NATIVE SPONSOR SLOTS */}
+            <div>
+              <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">
+                Native Partner &amp; Sponsor Placements
+              </h4>
+              <div className="space-y-6">
+                {adSettings.slots.map((slot, index) => (
                 <div
                   key={slot.id}
                   className="bg-slate-950/80 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-md"
@@ -664,6 +868,7 @@ export const AdminDashboardPage: React.FC = () => {
                   </div>
                 </div>
               ))}
+              </div>
             </div>
           </div>
         )}

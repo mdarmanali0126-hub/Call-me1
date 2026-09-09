@@ -1,9 +1,26 @@
 import { Profile, AdvertisingSettings, TelemetryEvent, AnalyticsSummary } from '../types';
 import { INITIAL_PROFILES, INITIAL_ADVERTISING_SETTINGS } from './seedData';
-import { getCurrentUserToken } from './firestoreService';
+import { getCurrentUserToken, fetchAdSettingsFromFirestore } from './firestoreService';
 
 // Base API URL points to the Express endpoints
 const API_BASE = '/api';
+
+// In-memory cache for public advertising to prevent duplicate network/Firestore calls
+let cachedAdSettings: AdvertisingSettings | null = null;
+let adSettingsPromise: Promise<AdvertisingSettings> | null = null;
+let lastAdFetchTime = 0;
+const AD_CACHE_TTL = 30000; // 30 seconds cache
+
+export function invalidateAdvertisingCache(updatedSettings?: AdvertisingSettings): void {
+  if (updatedSettings) {
+    cachedAdSettings = updatedSettings;
+    lastAdFetchTime = Date.now();
+  } else {
+    cachedAdSettings = null;
+    lastAdFetchTime = 0;
+  }
+  adSettingsPromise = null;
+}
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const headers: Record<string, string> = {
@@ -78,15 +95,51 @@ export async function recordProfileView(slug: string): Promise<number | null> {
 }
 
 export async function fetchPublicAdvertising(): Promise<AdvertisingSettings> {
-  try {
-    const res = await fetch(`${API_BASE}/settings/advertising`);
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    const json = await res.json();
-    return json.data;
-  } catch (error) {
-    console.warn('API advertising fetch failed, using defaults:', error);
-    return INITIAL_ADVERTISING_SETTINGS;
+  const now = Date.now();
+  if (cachedAdSettings && now - lastAdFetchTime < AD_CACHE_TTL) {
+    return cachedAdSettings;
   }
+
+  if (adSettingsPromise) {
+    return adSettingsPromise;
+  }
+
+  adSettingsPromise = (async () => {
+    try {
+      const res = await fetch(`${API_BASE}/settings/advertising`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data) {
+          cachedAdSettings = {
+            ...json.data,
+            ads: {
+              popunder: json.data.ads?.popunder ?? false,
+              socialBar: json.data.ads?.socialBar ?? false,
+              banner: json.data.ads?.banner ?? false,
+            }
+          };
+          lastAdFetchTime = Date.now();
+          return cachedAdSettings;
+        }
+      }
+      throw new Error(`API returned non-ok status: ${res.status}`);
+    } catch (error) {
+      // Fallback: fetch from Firestore if API route fails (e.g. static hosting)
+      try {
+        const firestoreSettings = await fetchAdSettingsFromFirestore();
+        cachedAdSettings = firestoreSettings;
+        lastAdFetchTime = Date.now();
+        return firestoreSettings;
+      } catch (fErr) {
+        console.warn('API and Firestore ad fetch failed, using defaults:', fErr);
+        return INITIAL_ADVERTISING_SETTINGS;
+      }
+    } finally {
+      adSettingsPromise = null;
+    }
+  })();
+
+  return adSettingsPromise;
 }
 
 export async function trackTelemetry(event: TelemetryEvent): Promise<void> {

@@ -195,7 +195,15 @@ export async function fetchAdSettingsFromFirestore(): Promise<AdvertisingSetting
     const docRef = doc(db, SETTINGS_COLLECTION, AD_SETTINGS_DOC);
     const snap = await getDoc(docRef);
     if (snap.exists()) {
-      return snap.data() as AdvertisingSettings;
+      const data = snap.data() as AdvertisingSettings;
+      return {
+        ...data,
+        ads: {
+          popunder: data.ads?.popunder ?? false,
+          socialBar: data.ads?.socialBar ?? false,
+          banner: data.ads?.banner ?? false,
+        }
+      };
     }
     return INITIAL_ADVERTISING_SETTINGS;
   } catch (error) {
@@ -303,7 +311,7 @@ export async function seedInitialDataIfEmpty(): Promise<void> {
 // -----------------------------------------------------------
 
 export interface AuthErrorDetails {
-  category: 'wrong_credentials' | 'user_not_found' | 'unauthorized' | 'network' | 'provider_disabled' | 'too_many_requests' | 'popup_blocked' | 'cancelled' | 'general';
+  category: 'wrong_credentials' | 'user_not_found' | 'unauthorized' | 'network' | 'provider_disabled' | 'too_many_requests' | 'popup_blocked' | 'cancelled' | 'unauthorized_domain' | 'general';
   message: string;
   originalCode: string;
 }
@@ -372,6 +380,12 @@ export function parseAuthError(error: any): AuthErrorDetails {
       return {
         category: 'cancelled',
         message: 'A previous authentication window is still active. Please finish signing in or click again.',
+        originalCode: code
+      };
+    case 'auth/unauthorized-domain':
+      return {
+        category: 'unauthorized_domain',
+        message: 'Unauthorized domain: The current domain is not authorized for OAuth operations in Firebase Authentication. Please add "call-me1.vercel.app" to Authorized Domains in Firebase Console.',
         originalCode: code
       };
     case 'auth/account-exists-with-different-credential':

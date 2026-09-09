@@ -23,6 +23,7 @@ import { StoryViewerModal } from '../components/StoryViewerModal';
 import { ContactModal } from '../components/ContactModal';
 import { ShareModal } from '../components/ShareModal';
 import { AdBanner } from '../components/AdBanner';
+import { AdsterraBanner } from '../components/AdsterraBanner';
 
 export const HomePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -316,6 +317,9 @@ export const HomePage: React.FC = () => {
 
           {/* Inline Native Ad Slot */}
           <AdBanner slotName="profile_inline" />
+
+          {/* Network Banner (320x50) */}
+          <AdsterraBanner />
 
           {/* Profiles Grid */}
           {loading ? (

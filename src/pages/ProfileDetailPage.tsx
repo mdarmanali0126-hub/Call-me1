@@ -26,6 +26,7 @@ import { StoryViewerModal } from '../components/StoryViewerModal';
 import { ContactModal } from '../components/ContactModal';
 import { ShareModal } from '../components/ShareModal';
 import { AdBanner } from '../components/AdBanner';
+import { AdsterraBanner } from '../components/AdsterraBanner';
 
 export const ProfileDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -356,6 +357,9 @@ export const ProfileDetailPage: React.FC = () => {
 
             {/* In-page Ad Banner */}
             <AdBanner slotName="profile_inline" profileSlug={profile.slug} />
+
+            {/* Network Banner (320x50) */}
+            <AdsterraBanner />
 
             {/* Gallery if present */}
             {profile.gallery && profile.gallery.length > 0 && (
