@@ -1,0 +1,131 @@
+{
+  "entities": {
+    "Profile": {
+      "title": "Profile",
+      "description": "Matrimonial candidate portfolio and story data",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the profile",
+          "maxLength": 128
+        },
+        "slug": {
+          "type": "string",
+          "description": "URL-safe unique slug for public routing",
+          "maxLength": 128,
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Full name of the candidate",
+          "maxLength": 100
+        },
+        "age": {
+          "type": "number",
+          "description": "Candidate age"
+        },
+        "maritalStatus": {
+          "type": "string",
+          "description": "Marital status",
+          "enum": ["Never Married", "Divorced", "Widowed", "Separated", "Single"]
+        },
+        "city": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "state": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "country": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "profession": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "education": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "bio": {
+          "type": "string",
+          "maxLength": 5000
+        },
+        "proposalMessage": {
+          "type": "string",
+          "maxLength": 3000
+        },
+        "image": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "published": {
+          "type": "boolean"
+        },
+        "featured": {
+          "type": "boolean"
+        },
+        "views": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "slug", "fullName", "age", "maritalStatus", "city", "country", "profession", "education", "published"]
+    },
+    "AdvertisingSettings": {
+      "title": "AdvertisingSettings",
+      "description": "Advertising configuration for sponsor slots",
+      "type": "object",
+      "properties": {
+        "updatedAt": {
+          "type": "string"
+        }
+      }
+    },
+    "TelemetryEvent": {
+      "title": "TelemetryEvent",
+      "description": "Lightweight telemetry session event",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "type": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "profileSlug": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "timestamp": {
+          "type": "string"
+        }
+      },
+      "required": ["type", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/profiles/{profileId}": {
+      "schema": "Profile",
+      "description": "Candidate portfolios and proposals"
+    },
+    "/settings/{settingId}": {
+      "schema": "AdvertisingSettings",
+      "description": "Global application configuration including ads"
+    },
+    "/telemetry/{eventId}": {
+      "schema": "TelemetryEvent",
+      "description": "Client interaction telemetry events"
+    }
+  }
+}

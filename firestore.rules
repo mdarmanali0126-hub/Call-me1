@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email == 'mdarmanali0126@gmail.com' && (request.auth.token.email_verified == true || request.auth.token.firebase.sign_in_provider == 'google.com' || request.auth.token.firebase.sign_in_provider == 'password')) ||
+        request.auth.token.admin == true ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // 1. Candidate Profiles Collection
+    match /profiles/{profileId} {
+      // Public visitors can only read published profiles
+      // Authenticated admins can read all profiles (both published and drafts)
+      allow get: if (resource.data.published == true) || isAdmin();
+      allow list: if (resource.data.published == true) || isAdmin();
+
+      // Only authenticated admins can create or delete profiles
+      allow create: if isAdmin() && isValidId(profileId);
+      allow delete: if isAdmin();
+
+      // Admins can update any field; public visitors may only increment view count
+      allow update: if isAdmin() || (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views']) &&
+        request.resource.data.views == resource.data.views + 1
+      );
+    }
+
+    // 2. Application & Advertising Settings
+    match /settings/{settingId} {
+      // Public visitors can read active advertising slots and app configuration
+      allow read: if true;
+
+      // Only authenticated admins can update advertising settings
+      allow write: if isAdmin();
+    }
+
+    // 3. Telemetry Collection
+    match /telemetry/{eventId} {
+      // Public visitors can log page views, story opens, and clicks
+      allow create: if request.resource.data.type is string
+                    && request.resource.data.type.size() <= 64
+                    && request.resource.data.timestamp is string;
+
+      // Only authenticated admins can read analytics and telemetry logs
+      allow read: if isAdmin();
+
+      // Telemetry records are immutable and cannot be updated or deleted
+      allow update, delete: if false;
+    }
+
+    // 4. Admin Role Directory
+    match /admins/{adminId} {
+      allow read: if isSignedIn() && (request.auth.uid == adminId || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // Global default-deny fallback
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

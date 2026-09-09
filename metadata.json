@@ -1,0 +1,7 @@
+{
+  "name": "Call Me - Matrimonial & Personal Profile Platform",
+  "description": "Production-ready matrimonial and personal profile platform featuring dynamic slug routing, immersive Story Mode, advertising architecture, analytics telemetry, and a complete Firebase-powered admin dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
