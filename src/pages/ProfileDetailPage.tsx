@@ -140,6 +140,7 @@ export const ProfileDetailPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+      <AdsterraBanner slotName="header" />
       <Navbar />
 
       <main className="flex-1 pb-16">
@@ -360,7 +361,7 @@ export const ProfileDetailPage: React.FC = () => {
             )}
 
             {/* Network Banner (320x50) */}
-            <AdsterraBanner />
+            <AdsterraBanner slotName="profile_inline" />
 
             {/* Gallery if present */}
             {profile.gallery && profile.gallery.filter(Boolean).length > 0 && (
@@ -502,6 +503,10 @@ export const ProfileDetailPage: React.FC = () => {
           </section>
         )}
       </main>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-6 w-full">
+        <AdsterraBanner slotName="footer" />
+      </div>
 
       <Footer />
 

@@ -111,6 +111,9 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+      {/* Header Ad Slot */}
+      <AdsterraBanner slotName="header" />
+
       {/* Navigation */}
       <Navbar onSearchClick={() => setSearchModalOpen(true)} />
 
@@ -358,7 +361,7 @@ export const HomePage: React.FC = () => {
           </div>
 
           {/* Network Banner (320x50) */}
-          <AdsterraBanner />
+          <AdsterraBanner slotName="profile_inline" />
 
           {/* Profiles Grid */}
           {loading ? (
@@ -401,6 +404,11 @@ export const HomePage: React.FC = () => {
 
         </section>
       </main>
+
+      {/* Footer Banner */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-6 w-full">
+        <AdsterraBanner slotName="footer" />
+      </div>
 
       <Footer />
 

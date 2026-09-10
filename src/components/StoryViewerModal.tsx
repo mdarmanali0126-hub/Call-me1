@@ -18,6 +18,7 @@ import {
 import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 import { trackTelemetry } from '../lib/api';
 import { logEvent } from '../lib/analytics';
+import { AdsterraBanner } from './AdsterraBanner';
 
 interface StoryViewerModalProps {
   profile: Profile;
@@ -340,6 +341,11 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
             <p className="text-sm text-slate-200 leading-relaxed max-w-sm">
               {currentSlide.text}
             </p>
+
+            {/* Adsterra Story Sponsor Banner */}
+            <div className="pointer-events-auto">
+              <AdsterraBanner slotName="story_sponsor" className="!my-2" />
+            </div>
 
             {/* CTA button inside slide */}
             {currentSlide.ctaText && (
