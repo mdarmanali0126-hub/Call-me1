@@ -74,7 +74,7 @@ export const AdBanner: React.FC<AdBannerProps> = ({ slotName, profileSlug, class
         </div>
 
         <div className="flex flex-col sm:flex-row gap-5 items-center">
-          {ad.imageUrl && (
+          {ad.imageUrl && ad.imageUrl.trim() !== '' && (
             <img
               src={ad.imageUrl}
               alt={ad.sponsorName}

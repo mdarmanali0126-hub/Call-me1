@@ -102,3 +102,5 @@ export interface AnalyticsSummary {
   }>;
   recentEvents: TelemetryEvent[];
 }
+
+export const DEFAULT_AVATAR_PLACEHOLDER = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80';

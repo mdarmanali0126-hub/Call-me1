@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Briefcase, GraduationCap, Play, Eye, ShieldCheck, Heart, Sparkles } from 'lucide-react';
-import { Profile } from '../types';
+import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 
 interface ProfileCardProps {
   profile: Profile;
@@ -17,7 +17,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onOpenStory, 
       {/* Top Image & Visual Header */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
         <img
-          src={profile.image}
+          src={profile.image || DEFAULT_AVATAR_PLACEHOLDER}
           alt={profile.fullName}
           referrerPolicy="no-referrer"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"

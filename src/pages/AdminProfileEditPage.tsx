@@ -15,7 +15,7 @@ import {
   Eye
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { Profile, StorySlide } from '../types';
+import { Profile, StorySlide, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 import {
   fetchProfilesFromFirestore,
   saveProfileToFirestore,
@@ -434,7 +434,7 @@ export const AdminProfileEditPage: React.FC = () => {
               <label className="block text-slate-300 font-semibold text-xs">Primary Portrait Photo URL</label>
               <div className="flex flex-col sm:flex-row gap-4 items-center">
                 <img
-                  src={profile.image}
+                  src={profile.image && profile.image.trim() !== '' ? profile.image : DEFAULT_AVATAR_PLACEHOLDER}
                   alt="Portrait preview"
                   referrerPolicy="no-referrer"
                   className="w-20 h-20 rounded-2xl object-cover border-2 border-rose-500 shrink-0"

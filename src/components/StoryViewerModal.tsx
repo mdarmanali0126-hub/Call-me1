@@ -15,7 +15,7 @@ import {
   Heart,
   Quote
 } from 'lucide-react';
-import { Profile } from '../types';
+import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 import { AdBanner } from './AdBanner';
 import { trackTelemetry } from '../lib/api';
 
@@ -196,7 +196,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
           <div className="flex items-center justify-between mt-3 text-white">
             <div className="flex items-center gap-2.5">
               <img
-                src={profile.image}
+                src={profile.image || DEFAULT_AVATAR_PLACEHOLDER}
                 alt={profile.fullName}
                 referrerPolicy="no-referrer"
                 className="w-9 h-9 rounded-full object-cover border-2 border-rose-500 shadow-xs"
@@ -278,7 +278,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
               className="absolute inset-0 w-full h-full"
             >
               {/* Background media */}
-              {currentSlide.mediaUrl ? (
+              {currentSlide.mediaUrl && currentSlide.mediaUrl.trim() !== '' ? (
                 <img
                   src={currentSlide.mediaUrl}
                   alt={currentSlide.title}

@@ -17,7 +17,7 @@ import {
   ChevronRight,
   User
 } from 'lucide-react';
-import { Profile } from '../types';
+import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 import { fetchPublicProfileBySlug, fetchPublicProfiles, recordProfileView, trackTelemetry } from '../lib/api';
 import { updateSEO, injectProfileJsonLd } from '../lib/seo';
 import { Navbar } from '../components/Navbar';
@@ -158,7 +158,7 @@ export const ProfileDetailPage: React.FC = () => {
               {/* Left Column: Image & Media Gallery */}
               <div className="lg:col-span-5 relative bg-slate-950 min-h-[420px] lg:min-h-[540px] flex flex-col justify-end p-6 overflow-hidden">
                 <img
-                  src={profile.image}
+                  src={profile.image || DEFAULT_AVATAR_PLACEHOLDER}
                   alt={profile.fullName}
                   referrerPolicy="no-referrer"
                   className="absolute inset-0 w-full h-full object-cover opacity-90"
@@ -362,13 +362,13 @@ export const ProfileDetailPage: React.FC = () => {
             <AdsterraBanner />
 
             {/* Gallery if present */}
-            {profile.gallery && profile.gallery.length > 0 && (
+            {profile.gallery && profile.gallery.filter(Boolean).length > 0 && (
               <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-4">
                 <h3 className="text-xl font-bold font-serif-luxury text-slate-900">
                   Portfolio Gallery
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {profile.gallery.map((imgUrl, i) => (
+                  {profile.gallery.filter(img => Boolean(img && img.trim())).map((imgUrl, i) => (
                     <img
                       key={i}
                       src={imgUrl}
@@ -479,7 +479,7 @@ export const ProfileDetailPage: React.FC = () => {
                   className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center gap-4 hover:shadow-md transition-shadow"
                 >
                   <img
-                    src={p.image}
+                    src={p.image || DEFAULT_AVATAR_PLACEHOLDER}
                     alt={p.fullName}
                     referrerPolicy="no-referrer"
                     className="w-16 h-16 rounded-xl object-cover"

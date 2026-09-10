@@ -1,5 +1,5 @@
 import { Profile, AdvertisingSettings, TelemetryEvent, AnalyticsSummary } from '../types';
-import { INITIAL_PROFILES, INITIAL_ADVERTISING_SETTINGS } from './seedData';
+import { INITIAL_ADVERTISING_SETTINGS } from './seedData';
 import { getCurrentUserToken, fetchAdSettingsFromFirestore } from './firestoreService';
 
 // Base API URL points to the Express endpoints
@@ -45,36 +45,36 @@ export async function fetchPublicProfiles(filters?: ProfileFilters): Promise<Pro
   try {
     const params = new URLSearchParams();
     if (filters?.search) params.append('search', filters.search);
-    if (filters?.profession) params.append('profession', filters.profession);
-    if (filters?.country) params.append('country', filters.country);
-    if (filters?.maritalStatus) params.append('maritalStatus', filters.maritalStatus);
+    if (filters?.profession && filters.profession !== 'all') params.append('profession', filters.profession);
+    if (filters?.country && filters.country !== 'all') params.append('country', filters.country);
+    if (filters?.maritalStatus && filters.maritalStatus !== 'all') params.append('maritalStatus', filters.maritalStatus);
     if (filters?.featured) params.append('featured', 'true');
 
     const res = await fetch(`${API_BASE}/profiles?${params.toString()}`);
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    const json = await res.json();
-    return json.data || [];
-  } catch (error) {
-    console.warn('API fetch profiles failed, falling back to local dataset:', error);
-    let results = INITIAL_PROFILES.filter(p => p.published);
-    if (filters?.search) {
-      const q = filters.search.toLowerCase();
-      results = results.filter(p => p.fullName.toLowerCase().includes(q) || p.profession.toLowerCase().includes(q));
+    if (res.ok) {
+      const json = await res.json();
+      if (Array.isArray(json.data)) {
+        return json.data;
+      }
     }
-    return results;
+    return [];
+  } catch (error) {
+    console.error('API fetch profiles failed:', error);
+    return [];
   }
 }
 
 export async function fetchPublicProfileBySlug(slug: string): Promise<Profile | null> {
   try {
     const res = await fetch(`${API_BASE}/profiles/${encodeURIComponent(slug)}`);
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    const json = await res.json();
-    return json.data || null;
+    if (res.ok) {
+      const json = await res.json();
+      if (json.data) return json.data;
+    }
+    return null;
   } catch (error) {
-    console.warn('API fetch single profile failed, falling back to local dataset:', error);
-    const item = INITIAL_PROFILES.find(p => p.slug === slug && p.published);
-    return item || null;
+    console.error('API fetch single profile failed:', error);
+    return null;
   }
 }
 
@@ -166,18 +166,25 @@ export async function fetchAdminTelemetryStats(): Promise<AnalyticsSummary> {
     console.warn('Admin stats fetch error:', err);
   }
   return {
-    totalViews: 4410,
-    totalStoryViews: 580,
-    totalContactClicks: 210,
-    totalAdClicks: 115,
-    popularProfiles: INITIAL_PROFILES.map(p => ({
-      id: p.id,
-      slug: p.slug,
-      fullName: p.fullName,
-      views: p.views
-    })).slice(0, 5),
+    totalViews: 0,
+    totalStoryViews: 0,
+    totalContactClicks: 0,
+    totalAdClicks: 0,
+    popularProfiles: [],
     recentEvents: []
   };
+}
+
+export async function refreshServerProfilesCache(): Promise<void> {
+  try {
+    const headers = await getAuthHeaders();
+    await fetch(`${API_BASE}/profiles/refresh`, {
+      method: 'POST',
+      headers
+    });
+  } catch (err) {
+    console.warn('Server profiles refresh note:', err);
+  }
 }
 
 export async function syncProfileToServer(profile: Profile): Promise<void> {

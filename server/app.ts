@@ -1,11 +1,21 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { INITIAL_PROFILES, INITIAL_ADVERTISING_SETTINGS } from '../src/lib/seedData';
+import https from 'https';
+import { INITIAL_ADVERTISING_SETTINGS } from '../src/lib/seedData';
 import { Profile, AdvertisingSettings, TelemetryEvent } from '../src/types';
 
-// In-memory cache synced with database state
-let profilesCache: Profile[] = [...INITIAL_PROFILES];
+// Firebase / Firestore Project Configurations
+const FIREBASE_PROJECT_ID = process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || 'lexical-layout-8pthm';
+const FIREBASE_DB_ID = process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || process.env.FIREBASE_DATABASE_ID || process.env.FIRESTORE_DATABASE_ID || 'ai-studio-b13ae003-c59b-43f9-ab4c-998699ecc304';
+const FIREBASE_API_KEY = process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY || 'AIzaSyBbOlWRBId2jdRWKgGfep6EFYZ5qXjvkV4';
+
+// In-memory cache synced with Firestore state
+let profilesCache: Profile[] = [];
+let lastProfilesFetch = 0;
+const PROFILES_CACHE_TTL = 15000; // 15 seconds TTL
+let pendingFetchPromise: Promise<Profile[]> | null = null;
+
 let advertisingCache: AdvertisingSettings = { ...INITIAL_ADVERTISING_SETTINGS };
 let telemetryLogs: TelemetryEvent[] = [];
 
@@ -42,44 +52,183 @@ function requireAdminAuth(req: express.Request, res: express.Response, next: exp
   });
 }
 
+// -----------------------------------------------------------
+// Firestore REST Decoder
+// -----------------------------------------------------------
+function decodeFirestoreValue(val: any): any {
+  if (!val || typeof val !== 'object') return val;
+  if ('stringValue' in val) return val.stringValue;
+  if ('booleanValue' in val) return val.booleanValue;
+  if ('integerValue' in val) return parseInt(val.integerValue, 10);
+  if ('doubleValue' in val) return parseFloat(val.doubleValue);
+  if ('timestampValue' in val) return val.timestampValue;
+  if ('nullValue' in val) return null;
+  if ('mapValue' in val) {
+    const res: Record<string, any> = {};
+    const fields = val.mapValue.fields || {};
+    for (const k in fields) {
+      res[k] = decodeFirestoreValue(fields[k]);
+    }
+    return res;
+  }
+  if ('arrayValue' in val) {
+    const values = val.arrayValue.values || [];
+    return values.map(decodeFirestoreValue);
+  }
+  return val;
+}
+
+function decodeFirestoreDoc(doc: any): Profile | null {
+  if (!doc || !doc.fields) return null;
+  const res: Record<string, any> = {};
+  for (const k in doc.fields) {
+    res[k] = decodeFirestoreValue(doc.fields[k]);
+  }
+  if (!res.id && doc.name) {
+    const parts = doc.name.split('/');
+    res.id = parts[parts.length - 1];
+  }
+  return res as Profile;
+}
+
+// -----------------------------------------------------------
+// Live Firestore Query Helper
+// -----------------------------------------------------------
+async function fetchLiveProfilesFromFirestore(forceFresh = false): Promise<Profile[]> {
+  const now = Date.now();
+  if (!forceFresh && profilesCache.length > 0 && now - lastProfilesFetch < PROFILES_CACHE_TTL) {
+    return profilesCache;
+  }
+
+  if (pendingFetchPromise && !forceFresh) {
+    return pendingFetchPromise;
+  }
+
+  pendingFetchPromise = new Promise<Profile[]>((resolve) => {
+    try {
+      const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/${FIREBASE_DB_ID}/documents:runQuery?key=${FIREBASE_API_KEY}`;
+      const payload = JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'profiles' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'published' },
+              op: 'EQUAL',
+              value: { booleanValue: true }
+            }
+          }
+        }
+      });
+
+      const parsedUrl = new URL(url);
+      const req = https.request({
+        hostname: parsedUrl.hostname,
+        path: parsedUrl.pathname + parsedUrl.search,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload)
+        },
+        timeout: 6000
+      }, (res) => {
+        let rawData = '';
+        res.on('data', (chunk) => { rawData += chunk; });
+        res.on('end', () => {
+          try {
+            if (res.statusCode === 200) {
+              const rawDocs = JSON.parse(rawData);
+              const liveProfiles: Profile[] = [];
+              if (Array.isArray(rawDocs)) {
+                for (const item of rawDocs) {
+                  if (item.document) {
+                    const decoded = decodeFirestoreDoc(item.document);
+                    if (decoded && decoded.slug && decoded.published !== false) {
+                      liveProfiles.push(decoded);
+                    }
+                  }
+                }
+              }
+
+              // Sort newest first
+              liveProfiles.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+              profilesCache = liveProfiles;
+              lastProfilesFetch = Date.now();
+              return resolve(liveProfiles);
+            }
+          } catch (e) {
+            console.warn('Error parsing Firestore response in server:', e);
+          }
+          resolve(profilesCache);
+        });
+      });
+
+      req.on('error', (err) => {
+        console.warn('Firestore live query error in server:', err.message);
+        resolve(profilesCache);
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        resolve(profilesCache);
+      });
+
+      req.write(payload);
+      req.end();
+    } catch (err) {
+      console.warn('Firestore query exception in server:', err);
+      resolve(profilesCache);
+    }
+  }).finally(() => {
+    pendingFetchPromise = null;
+  });
+
+  return pendingFetchPromise;
+}
+
 // API health endpoint
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
     timestamp: new Date().toISOString(),
     profilesCount: profilesCache.length,
+    projectId: FIREBASE_PROJECT_ID,
+    databaseId: FIREBASE_DB_ID,
     service: 'Call Me Matrimonial API'
   });
 });
 
 // GET /api/profiles - Public visitor endpoint for published profiles
-app.get('/api/profiles', (req, res) => {
+app.get('/api/profiles', async (req, res) => {
   try {
+    const forceFresh = req.query.fresh === 'true' || req.query.t !== undefined;
+    const liveList = await fetchLiveProfilesFromFirestore(forceFresh);
     const { search, profession, country, maritalStatus, featured } = req.query;
-    let results = profilesCache.filter(p => p.published !== false);
+    let results = liveList.filter(p => p.published !== false);
 
     if (search && typeof search === 'string') {
       const q = search.toLowerCase();
       results = results.filter(p =>
-        p.fullName.toLowerCase().includes(q) ||
-        p.profession.toLowerCase().includes(q) ||
-        p.city.toLowerCase().includes(q) ||
-        p.country.toLowerCase().includes(q) ||
-        p.bio.toLowerCase().includes(q) ||
+        (p.fullName && p.fullName.toLowerCase().includes(q)) ||
+        (p.profession && p.profession.toLowerCase().includes(q)) ||
+        (p.city && p.city.toLowerCase().includes(q)) ||
+        (p.country && p.country.toLowerCase().includes(q)) ||
+        (p.bio && p.bio.toLowerCase().includes(q)) ||
+        (p.proposalMessage && p.proposalMessage.toLowerCase().includes(q)) ||
         (p.tags && p.tags.some(t => t.toLowerCase().includes(q)))
       );
     }
 
-    if (profession && typeof profession === 'string') {
-      results = results.filter(p => p.profession.toLowerCase().includes(profession.toLowerCase()));
+    if (profession && typeof profession === 'string' && profession !== 'all') {
+      results = results.filter(p => p.profession && p.profession.toLowerCase().includes(profession.toLowerCase()));
     }
 
-    if (country && typeof country === 'string') {
-      results = results.filter(p => p.country.toLowerCase() === country.toLowerCase());
+    if (country && typeof country === 'string' && country !== 'all') {
+      results = results.filter(p => p.country && p.country.toLowerCase() === country.toLowerCase());
     }
 
-    if (maritalStatus && typeof maritalStatus === 'string') {
-      results = results.filter(p => p.maritalStatus.toLowerCase() === maritalStatus.toLowerCase());
+    if (maritalStatus && typeof maritalStatus === 'string' && maritalStatus !== 'all') {
+      results = results.filter(p => p.maritalStatus && p.maritalStatus.toLowerCase() === maritalStatus.toLowerCase());
     }
 
     if (featured === 'true') {
@@ -104,10 +253,17 @@ app.get('/api/profiles', (req, res) => {
 });
 
 // GET /api/profiles/:slug - Public single profile view
-app.get('/api/profiles/:slug', (req, res) => {
+app.get('/api/profiles/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
-    const profile = profilesCache.find(p => p.slug === slug && p.published !== false);
+    let liveList = await fetchLiveProfilesFromFirestore(false);
+    let profile = liveList.find(p => p.slug === slug && p.published !== false);
+
+    // If not found in cache, attempt fresh fetch from Firestore
+    if (!profile) {
+      liveList = await fetchLiveProfilesFromFirestore(true);
+      profile = liveList.find(p => p.slug === slug && p.published !== false);
+    }
 
     if (!profile) {
       return res.status(404).json({ success: false, message: 'Profile not found' });
@@ -137,7 +293,7 @@ app.post('/api/profiles/:slug/view', (req, res) => {
       });
       return res.json({ success: true, views: profile.views });
     }
-    res.status(404).json({ success: false, message: 'Profile not found' });
+    res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -231,12 +387,20 @@ app.post('/api/sync/profile', requireAdminAuth, (req, res) => {
     if (!profile || !profile.id) {
       return res.status(400).json({ success: false, message: 'Invalid profile data' });
     }
-    const idx = profilesCache.findIndex(p => p.id === profile.id);
+
+    const idx = profilesCache.findIndex(p => p.id === profile.id || (profile.slug && p.slug === profile.slug));
     if (idx >= 0) {
-      profilesCache[idx] = profile;
-    } else {
+      if (profile.published === false) {
+        profilesCache.splice(idx, 1);
+      } else {
+        profilesCache[idx] = profile;
+      }
+    } else if (profile.published !== false) {
       profilesCache.unshift(profile);
     }
+
+    // Reset TTL so subsequent requests refresh
+    lastProfilesFetch = 0;
     res.json({ success: true, updated: true });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -247,7 +411,17 @@ app.delete('/api/sync/profile/:id', requireAdminAuth, (req, res) => {
   try {
     const { id } = req.params;
     profilesCache = profilesCache.filter(p => p.id !== id);
+    lastProfilesFetch = 0;
     res.json({ success: true, deleted: true });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post('/api/profiles/refresh', requireAdminAuth, async (req, res) => {
+  try {
+    const fresh = await fetchLiveProfilesFromFirestore(true);
+    res.json({ success: true, count: fresh.length });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

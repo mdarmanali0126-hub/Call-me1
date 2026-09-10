@@ -32,7 +32,7 @@ import {
   Layout
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { Profile, AdvertisingSettings, AnalyticsSummary } from '../types';
+import { Profile, AdvertisingSettings, AnalyticsSummary, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 import {
   fetchProfilesFromFirestore,
   deleteProfileFromFirestore,
@@ -40,9 +40,15 @@ import {
   fetchAdSettingsFromFirestore,
   saveAdSettingsToFirestore,
   fetchTelemetrySummary,
-  seedInitialDataIfEmpty
+  refreshFirestoreSync
 } from '../lib/firestoreService';
-import { syncProfileToServer, syncDeleteProfileToServer, syncAdvertisingToServer, invalidateAdvertisingCache } from '../lib/api';
+import {
+  syncProfileToServer,
+  syncDeleteProfileToServer,
+  syncAdvertisingToServer,
+  invalidateAdvertisingCache,
+  refreshServerProfilesCache
+} from '../lib/api';
 import { StoryViewerModal } from '../components/StoryViewerModal';
 
 export const AdminDashboardPage: React.FC = () => {
@@ -93,18 +99,19 @@ export const AdminDashboardPage: React.FC = () => {
     }
   };
 
-  const [isSeeding, setIsSeeding] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleSeedDatabase = async () => {
-    setIsSeeding(true);
+  const handleRefreshData = async () => {
+    setIsRefreshing(true);
     try {
-      await seedInitialDataIfEmpty();
+      await refreshFirestoreSync();
+      await refreshServerProfilesCache();
       await loadAllData();
-      showToast('Firestore connected & populated with curated matrimonial candidate portfolios.');
+      showToast('Refreshed real candidate profiles from Firestore & synchronized caches.');
     } catch (err: any) {
-      setActionError('Firestore seed notice: ' + (err.message || String(err)));
+      setActionError('Firestore refresh notice: ' + (err.message || String(err)));
     } finally {
-      setIsSeeding(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -195,7 +202,7 @@ export const AdminDashboardPage: React.FC = () => {
                 </span>
               </div>
               <div className="flex items-center gap-2 mt-0.5">
-                {user?.photoURL && (
+                {user?.photoURL && user.photoURL.trim() !== '' && (
                   <img
                     src={user.photoURL}
                     alt="Admin"
@@ -375,13 +382,13 @@ export const AdminDashboardPage: React.FC = () => {
               <div className="flex items-center gap-3 w-full sm:w-auto">
                 <button
                   type="button"
-                  onClick={handleSeedDatabase}
-                  disabled={isSeeding}
+                  onClick={handleRefreshData}
+                  disabled={isRefreshing}
                   className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-                  title="Initialize or sync Firestore database with curated matrimonial profiles"
+                  title="Reload candidate profiles directly from Firestore without modifying existing profiles"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 text-rose-400 ${isSeeding ? 'animate-spin' : ''}`} />
-                  <span>{isSeeding ? 'Syncing...' : 'Sync Firestore DB'}</span>
+                  <RefreshCw className={`w-3.5 h-3.5 text-rose-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <span>{isRefreshing ? 'Refreshing...' : 'Refresh / Sync Data'}</span>
                 </button>
 
                 <Link
@@ -415,7 +422,7 @@ export const AdminDashboardPage: React.FC = () => {
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-3">
                             <img
-                              src={p.image}
+                              src={p.image || DEFAULT_AVATAR_PLACEHOLDER}
                               alt={p.fullName}
                               referrerPolicy="no-referrer"
                               className="w-10 h-10 rounded-xl object-cover border border-slate-700 shrink-0"
@@ -904,7 +911,7 @@ export const AdminDashboardPage: React.FC = () => {
                         <div className="flex items-center gap-3">
                           <span className="w-5 text-center font-bold text-slate-500">#{idx + 1}</span>
                           <img
-                            src={p.image}
+                            src={p.image || DEFAULT_AVATAR_PLACEHOLDER}
                             alt={p.fullName}
                             referrerPolicy="no-referrer"
                             className="w-8 h-8 rounded-lg object-cover"

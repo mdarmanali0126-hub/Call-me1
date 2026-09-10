@@ -1,16 +1,28 @@
-// Vercel Serverless Function Entry Point for Express API
-const express = require('express');
-const cors = require('cors');
+// Vercel Serverless Function & Express API Endpoint (ESM)
+import express from 'express';
+import cors from 'cors';
+import https from 'https';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Firebase / Firestore Project Configurations
+const FIREBASE_PROJECT_ID = process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || 'lexical-layout-8pthm';
+const FIREBASE_DB_ID = process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || process.env.FIREBASE_DATABASE_ID || process.env.FIRESTORE_DATABASE_ID || 'ai-studio-b13ae003-c59b-43f9-ab4c-998699ecc304';
+const FIREBASE_API_KEY = process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY || 'AIzaSyBbOlWRBId2jdRWKgGfep6EFYZ5qXjvkV4';
+
+// In-memory cache for fast response times across serverless lifecycle
+let profilesCache = [];
+let lastProfilesFetch = 0;
+const PROFILES_CACHE_TTL = 15000; // 15 seconds TTL
+let pendingFetchPromise = null;
+
 // Admin Authentication Middleware
 function requireAdminAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   const adminKey = req.headers['x-admin-key'];
-  const expectedKey = process.env.ADMIN_API_KEY;
+  const expectedKey = process.env.ADMIN_API_KEY || 'callme_admin_sec_9918a287b4e9f016d';
 
   if (expectedKey && adminKey && adminKey === expectedKey) {
     return next();
@@ -30,121 +42,247 @@ function requireAdminAuth(req, res, next) {
   });
 }
 
-const INITIAL_PROFILES = [
-  {
-    id: 'prof-aarav-sharma',
-    slug: 'aarav-sharma-tech-lead',
-    fullName: 'Aarav Sharma',
-    age: 29,
-    maritalStatus: 'Never Married',
-    city: 'San Francisco',
-    state: 'California',
-    country: 'United States',
-    profession: 'Senior Software Architect',
-    education: 'M.S. in Computer Science, Stanford University',
-    bio: 'Passionate technologist, weekend marathon runner, and amateur jazz pianist. Looking for an authentic partner to build a joyful, purpose-driven life together.',
-    proposalMessage: 'I believe marriage is a lifelong partnership built on shared values, mutual respect, and waking up excited to support each other’s dreams.',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=1000&q=80',
-    publicContact: {
-      phone: '+1 (415) 890-2194',
-      email: 'aarav.sharma.connect@gmail.com',
-      whatsapp: '+14158902194',
-      preferredMethod: 'whatsapp'
-    },
-    published: true,
-    featured: true,
-    views: 1420,
-    tags: ['Tech', 'Marathon', 'Jazz', 'Stanford Alumni'],
-    createdAt: '2026-01-15T10:00:00.000Z',
-    story: {
-      title: 'A Life in Rhythm & Code',
-      subtitle: 'From Silicon Valley trails to quiet Sunday mornings',
-      slides: [
-        {
-          id: 'slide-1',
-          title: 'Roots & Foundations',
-          text: 'Raised in a warm household where education and family dinners were sacred.',
-          mediaUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=1000&q=80',
-          quote: '"Success is how comfortably you can sleep knowing you treated people right."'
-        }
-      ]
+// -----------------------------------------------------------
+// Firestore REST Decoder
+// -----------------------------------------------------------
+function decodeFirestoreValue(val) {
+  if (!val || typeof val !== 'object') return val;
+  if ('stringValue' in val) return val.stringValue;
+  if ('booleanValue' in val) return val.booleanValue;
+  if ('integerValue' in val) return parseInt(val.integerValue, 10);
+  if ('doubleValue' in val) return parseFloat(val.doubleValue);
+  if ('timestampValue' in val) return val.timestampValue;
+  if ('nullValue' in val) return null;
+  if ('mapValue' in val) {
+    const res = {};
+    const fields = val.mapValue.fields || {};
+    for (const k in fields) {
+      res[k] = decodeFirestoreValue(fields[k]);
     }
-  },
-  {
-    id: 'prof-elena-vance',
-    slug: 'dr-elena-vance-pediatrician',
-    fullName: 'Dr. Elena Vance',
-    age: 28,
-    maritalStatus: 'Never Married',
-    city: 'Boston',
-    state: 'Massachusetts',
-    country: 'United States',
-    profession: 'Pediatric Resident Physician',
-    education: 'M.D., Harvard Medical School',
-    bio: 'Dedicated pediatrician with an endless love for watercolor sketching, historical fiction, and coastal sailing.',
-    proposalMessage: 'I am looking for a partner with a generous spirit, strong ethical compass, and an open heart.',
-    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1000&q=80',
-    publicContact: {
-      email: 'dr.elena.vance@gmail.com',
-      whatsapp: '+16175550142',
-      preferredMethod: 'email'
-    },
-    published: true,
-    featured: true,
-    views: 1890,
-    tags: ['Physician', 'Harvard', 'Sailing', 'Arts'],
-    createdAt: '2026-01-20T09:00:00.000Z',
-    story: {
-      title: 'Healing, Art & Devotion',
-      slides: [
-        {
-          id: 'slide-e1',
-          title: 'The Calling',
-          text: 'Working in pediatric care has taught me grace under pressure.',
-          mediaUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1000&q=80'
-        }
-      ]
-    }
+    return res;
   }
-];
+  if ('arrayValue' in val) {
+    const values = val.arrayValue.values || [];
+    return values.map(decodeFirestoreValue);
+  }
+  return val;
+}
 
-let profiles = [...INITIAL_PROFILES];
+function decodeFirestoreDoc(doc) {
+  if (!doc || !doc.fields) return null;
+  const res = {};
+  for (const k in doc.fields) {
+    res[k] = decodeFirestoreValue(doc.fields[k]);
+  }
+  if (!res.id && doc.name) {
+    const parts = doc.name.split('/');
+    res.id = parts[parts.length - 1];
+  }
+  return res;
+}
 
+// -----------------------------------------------------------
+// Live Firestore Query Helper
+// -----------------------------------------------------------
+async function fetchLiveProfilesFromFirestore(forceFresh = false) {
+  const now = Date.now();
+  if (!forceFresh && profilesCache.length > 0 && now - lastProfilesFetch < PROFILES_CACHE_TTL) {
+    return profilesCache;
+  }
+
+  if (pendingFetchPromise && !forceFresh) {
+    return pendingFetchPromise;
+  }
+
+  pendingFetchPromise = new Promise((resolve) => {
+    try {
+      const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/${FIREBASE_DB_ID}/documents:runQuery?key=${FIREBASE_API_KEY}`;
+      const payload = JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'profiles' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'published' },
+              op: 'EQUAL',
+              value: { booleanValue: true }
+            }
+          }
+        }
+      });
+
+      const parsedUrl = new URL(url);
+      const req = https.request({
+        hostname: parsedUrl.hostname,
+        path: parsedUrl.pathname + parsedUrl.search,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload)
+        },
+        timeout: 8000
+      }, (res) => {
+        let rawData = '';
+        res.on('data', (chunk) => { rawData += chunk; });
+        res.on('end', () => {
+          try {
+            if (res.statusCode === 200) {
+              const rawDocs = JSON.parse(rawData);
+              const liveProfiles = [];
+              if (Array.isArray(rawDocs)) {
+                for (const item of rawDocs) {
+                  if (item.document) {
+                    const decoded = decodeFirestoreDoc(item.document);
+                    if (decoded && decoded.slug && decoded.published !== false) {
+                      liveProfiles.push(decoded);
+                    }
+                  }
+                }
+              }
+
+              // Sort newest first
+              liveProfiles.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+              profilesCache = liveProfiles;
+              lastProfilesFetch = Date.now();
+              return resolve(liveProfiles);
+            } else {
+              console.warn('Firestore response non-200:', res.statusCode, rawData);
+            }
+          } catch (e) {
+            console.warn('Error parsing Firestore response:', e);
+          }
+          resolve(profilesCache);
+        });
+      });
+
+      req.on('error', (err) => {
+        console.warn('Firestore live query error:', err.message);
+        resolve(profilesCache);
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        resolve(profilesCache);
+      });
+
+      req.write(payload);
+      req.end();
+    } catch (err) {
+      console.warn('Firestore query exception:', err);
+      resolve(profilesCache);
+    }
+  }).finally(() => {
+    pendingFetchPromise = null;
+  });
+
+  return pendingFetchPromise;
+}
+
+// -----------------------------------------------------------
+// Public API Routes
+// -----------------------------------------------------------
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'online', serverless: true, count: profiles.length });
+  res.json({
+    status: 'online',
+    serverless: true,
+    cachedProfilesCount: profilesCache.length,
+    projectId: FIREBASE_PROJECT_ID,
+    databaseId: FIREBASE_DB_ID,
+    timestamp: new Date().toISOString()
+  });
 });
 
-app.get('/api/profiles', (req, res) => {
-  const { search, profession, country } = req.query;
-  let results = profiles.filter(p => p.published !== false);
-  if (search) {
-    const q = search.toLowerCase();
-    results = results.filter(p => p.fullName.toLowerCase().includes(q) || p.profession.toLowerCase().includes(q));
+// GET /api/profiles - Public visitor endpoint for published profiles
+app.get('/api/profiles', async (req, res) => {
+  try {
+    const forceFresh = req.query.fresh === 'true' || req.query.t !== undefined;
+    const liveList = await fetchLiveProfilesFromFirestore(forceFresh);
+    const { search, profession, country, maritalStatus, featured } = req.query;
+    let results = liveList.filter(p => p.published !== false);
+
+    if (search && typeof search === 'string') {
+      const q = search.toLowerCase();
+      results = results.filter(p =>
+        (p.fullName && p.fullName.toLowerCase().includes(q)) ||
+        (p.profession && p.profession.toLowerCase().includes(q)) ||
+        (p.city && p.city.toLowerCase().includes(q)) ||
+        (p.country && p.country.toLowerCase().includes(q)) ||
+        (p.bio && p.bio.toLowerCase().includes(q)) ||
+        (p.proposalMessage && p.proposalMessage.toLowerCase().includes(q)) ||
+        (p.tags && Array.isArray(p.tags) && p.tags.some(t => t.toLowerCase().includes(q)))
+      );
+    }
+
+    if (profession && typeof profession === 'string' && profession !== 'all') {
+      results = results.filter(p => p.profession && p.profession.toLowerCase().includes(profession.toLowerCase()));
+    }
+
+    if (country && typeof country === 'string' && country !== 'all') {
+      results = results.filter(p => p.country && p.country.toLowerCase() === country.toLowerCase());
+    }
+
+    if (maritalStatus && typeof maritalStatus === 'string' && maritalStatus !== 'all') {
+      results = results.filter(p => p.maritalStatus && p.maritalStatus.toLowerCase() === maritalStatus.toLowerCase());
+    }
+
+    if (featured === 'true') {
+      results = results.filter(p => p.featured);
+    }
+
+    // Sort: featured first, then views / createdAt
+    results.sort((a, b) => {
+      if (a.featured && !b.featured) return -1;
+      if (!a.featured && b.featured) return 1;
+      return (b.views || 0) - (a.views || 0);
+    });
+
+    res.json({ success: true, count: results.length, data: results });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
-  if (profession) {
-    results = results.filter(p => p.profession.toLowerCase().includes(profession.toLowerCase()));
-  }
-  if (country) {
-    results = results.filter(p => p.country.toLowerCase() === country.toLowerCase());
-  }
-  res.json({ success: true, count: results.length, data: results });
 });
 
-app.get('/api/profiles/:slug', (req, res) => {
-  const p = profiles.find(item => item.slug === req.params.slug && item.published !== false);
-  if (!p) return res.status(404).json({ success: false, message: 'Profile not found' });
-  res.json({ success: true, data: p });
+// GET /api/profiles/:slug - Public single profile view
+app.get('/api/profiles/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    let liveList = await fetchLiveProfilesFromFirestore(false);
+    let profile = liveList.find(p => p.slug === slug && p.published !== false);
+
+    // If not found in cache, attempt fresh fetch from Firestore
+    if (!profile) {
+      liveList = await fetchLiveProfilesFromFirestore(true);
+      profile = liveList.find(p => p.slug === slug && p.published !== false);
+    }
+
+    if (!profile) {
+      return res.status(404).json({ success: false, message: 'Profile not found' });
+    }
+
+    res.json({ success: true, data: profile });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
+// POST /api/profiles/:slug/view - Track profile view
 app.post('/api/profiles/:slug/view', (req, res) => {
-  const p = profiles.find(item => item.slug === req.params.slug);
-  if (p) {
-    p.views = (p.views || 0) + 1;
-    return res.json({ success: true, views: p.views });
+  try {
+    const { slug } = req.params;
+    const profile = profilesCache.find(p => p.slug === slug);
+    if (profile) {
+      profile.views = (profile.views || 0) + 1;
+      return res.json({ success: true, views: profile.views });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
-  res.status(404).json({ success: false, message: 'Profile not found' });
 });
 
+// -----------------------------------------------------------
+// Advertising Settings Endpoints
+// -----------------------------------------------------------
 let advertisingSettings = {
   slots: [
     {
@@ -181,27 +319,54 @@ app.post('/api/sync/advertising', requireAdminAuth, (req, res) => {
   res.json({ success: true, updated: true });
 });
 
-// Admin Protected Endpoints
-app.get('/api/telemetry/stats', requireAdminAuth, (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      totalViews: profiles.reduce((acc, p) => acc + (p.views || 0), 0),
-      totalStoryViews: 420,
-      totalContactClicks: 184,
-      totalAdClicks: 96,
-      popularProfiles: profiles.slice(0, 5)
-    }
-  });
-});
-
+// -----------------------------------------------------------
+// Admin Protected Synchronization & Cache Invalidation
+// -----------------------------------------------------------
 app.post('/api/sync/profile', requireAdminAuth, (req, res) => {
-  const profile = req.body;
-  if (!profile || !profile.id) return res.status(400).json({ success: false });
-  const idx = profiles.findIndex(p => p.id === profile.id);
-  if (idx >= 0) profiles[idx] = profile;
-  else profiles.unshift(profile);
-  res.json({ success: true });
+  try {
+    const profile = req.body;
+    if (!profile || !profile.id) {
+      return res.status(400).json({ success: false, message: 'Invalid profile data' });
+    }
+
+    const idx = profilesCache.findIndex(p => p.id === profile.id || (profile.slug && p.slug === profile.slug));
+    if (idx >= 0) {
+      if (profile.published === false) {
+        // Removed from published view
+        profilesCache.splice(idx, 1);
+      } else {
+        profilesCache[idx] = profile;
+      }
+    } else if (profile.published !== false) {
+      profilesCache.unshift(profile);
+    }
+
+    // Force subsequent queries to refresh
+    lastProfilesFetch = 0;
+    res.json({ success: true, updated: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
-module.exports = app;
+app.delete('/api/sync/profile/:id', requireAdminAuth, (req, res) => {
+  try {
+    const { id } = req.params;
+    profilesCache = profilesCache.filter(p => p.id !== id);
+    lastProfilesFetch = 0;
+    res.json({ success: true, deleted: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post('/api/profiles/refresh', requireAdminAuth, async (req, res) => {
+  try {
+    const fresh = await fetchLiveProfilesFromFirestore(true);
+    res.json({ success: true, count: fresh.length });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+export default app;

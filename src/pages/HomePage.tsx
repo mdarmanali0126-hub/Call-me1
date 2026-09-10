@@ -13,7 +13,7 @@ import {
   Flame,
   Users
 } from 'lucide-react';
-import { Profile } from '../types';
+import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 import { fetchPublicProfiles, trackTelemetry } from '../lib/api';
 import { updateSEO } from '../lib/seo';
 import { Navbar } from '../components/Navbar';
@@ -172,7 +172,7 @@ export const HomePage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-12 items-center">
                   <div className="md:col-span-5 relative aspect-square sm:aspect-auto sm:h-full min-h-[300px]">
                     <img
-                      src={spotlightProfile.image}
+                      src={spotlightProfile.image || DEFAULT_AVATAR_PLACEHOLDER}
                       alt={spotlightProfile.fullName}
                       referrerPolicy="no-referrer"
                       className="w-full h-full object-cover"

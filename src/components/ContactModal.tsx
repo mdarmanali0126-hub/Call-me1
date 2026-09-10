@@ -12,7 +12,7 @@ import {
   Globe,
   ExternalLink
 } from 'lucide-react';
-import { Profile } from '../types';
+import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 import { trackTelemetry } from '../lib/api';
 
 interface ContactModalProps {
@@ -55,7 +55,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({ profile, isOpen, onC
         <div className="p-6 bg-gradient-to-r from-rose-600 via-rose-700 to-amber-700 text-white flex items-start justify-between">
           <div className="flex items-center gap-3.5">
             <img
-              src={profile.image}
+              src={profile.image || DEFAULT_AVATAR_PLACEHOLDER}
               alt={profile.fullName}
               referrerPolicy="no-referrer"
               className="w-14 h-14 rounded-2xl object-cover border-2 border-white/80 shadow-md"

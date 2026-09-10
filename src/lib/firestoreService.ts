@@ -22,7 +22,7 @@ import {
 } from 'firebase/auth';
 import { db, auth } from './firebase';
 import { Profile, AdvertisingSettings, TelemetryEvent, AnalyticsSummary } from '../types';
-import { INITIAL_PROFILES, INITIAL_ADVERTISING_SETTINGS } from './seedData';
+import { INITIAL_ADVERTISING_SETTINGS } from './seedData';
 
 const PROFILES_COLLECTION = 'profiles';
 const SETTINGS_COLLECTION = 'settings';
@@ -90,8 +90,7 @@ export async function fetchProfilesFromFirestore(onlyPublished = false): Promise
     }
     const snapshot = await getDocs(q);
     if (snapshot.empty) {
-      // If collection is empty in local preview, use seed profiles
-      return onlyPublished ? INITIAL_PROFILES.filter(p => p.published) : INITIAL_PROFILES;
+      return [];
     }
 
     const profiles: Profile[] = [];
@@ -101,8 +100,8 @@ export async function fetchProfilesFromFirestore(onlyPublished = false): Promise
 
     return profiles.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
   } catch (error) {
-    console.warn('Firestore fetch notice (using cache/seed fallback):', error);
-    return onlyPublished ? INITIAL_PROFILES.filter(p => p.published) : INITIAL_PROFILES;
+    console.warn('Firestore fetch notice:', error);
+    return [];
   }
 }
 
@@ -115,11 +114,10 @@ export async function getProfileBySlugFromFirestore(slug: string): Promise<Profi
     if (!snapshot.empty) {
       return snapshot.docs[0].data() as Profile;
     }
-    const found = INITIAL_PROFILES.find(p => p.slug === slug);
-    return found || null;
+    return null;
   } catch (error) {
     console.warn('Firestore getProfileBySlug error:', error);
-    return INITIAL_PROFILES.find(p => p.slug === slug) || null;
+    return null;
   }
 }
 
@@ -281,28 +279,42 @@ export async function fetchTelemetrySummary(): Promise<AnalyticsSummary> {
       recentEvents: events.slice(-20).reverse()
     };
   } catch (error) {
-    const profiles = INITIAL_PROFILES;
     return {
-      totalViews: profiles.reduce((acc, p) => acc + (p.views || 0), 0),
-      totalStoryViews: 412,
-      totalContactClicks: 184,
-      totalAdClicks: 96,
-      popularProfiles: profiles.map(p => ({ id: p.id, slug: p.slug, fullName: p.fullName, views: p.views })).slice(0, 5),
+      totalViews: 0,
+      totalStoryViews: 0,
+      totalContactClicks: 0,
+      totalAdClicks: 0,
+      popularProfiles: [],
       recentEvents: []
     };
   }
 }
 
-export async function seedInitialDataIfEmpty(): Promise<void> {
+/**
+ * Non-destructive Firestore synchronization.
+ * Preserves all real candidate profiles created by the administrator.
+ * NEVER re-inserts, deletes, or overwrites candidate profiles with demo data.
+ */
+export async function refreshFirestoreSync(): Promise<Profile[]> {
   try {
-    for (const p of INITIAL_PROFILES) {
-      const docRef = doc(db, PROFILES_COLLECTION, p.id);
-      await setDoc(docRef, p);
+    // 1. Fetch current real profiles from Firestore
+    const liveProfiles = await fetchProfilesFromFirestore(false);
+
+    // 2. Ensure system configuration documents exist if missing (does not touch profiles)
+    try {
+      const adDocRef = doc(db, SETTINGS_COLLECTION, AD_SETTINGS_DOC);
+      const snap = await getDoc(adDocRef);
+      if (!snap.exists()) {
+        await setDoc(adDocRef, INITIAL_ADVERTISING_SETTINGS);
+      }
+    } catch (confErr) {
+      console.warn('System settings sync notice:', confErr);
     }
-    const adDocRef = doc(db, SETTINGS_COLLECTION, AD_SETTINGS_DOC);
-    await setDoc(adDocRef, INITIAL_ADVERTISING_SETTINGS);
+
+    return liveProfiles;
   } catch (err) {
-    console.warn('Seed initialization notice:', err);
+    console.warn('Firestore refresh notice:', err);
+    return [];
   }
 }
 

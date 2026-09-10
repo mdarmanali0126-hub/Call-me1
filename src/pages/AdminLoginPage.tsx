@@ -200,7 +200,7 @@ export const AdminLoginPage: React.FC = () => {
         {isAuthenticated && user ? (
           <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
             <div className="flex items-center gap-3">
-              {user.photoURL ? (
+              {user.photoURL && user.photoURL.trim() !== '' ? (
                 <img
                   src={user.photoURL}
                   alt={user.displayName || 'Admin'}
