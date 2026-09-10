@@ -23,7 +23,6 @@ import { ProfileCard } from '../components/ProfileCard';
 import { StoryViewerModal } from '../components/StoryViewerModal';
 import { ContactModal } from '../components/ContactModal';
 import { ShareModal } from '../components/ShareModal';
-import { AdBanner } from '../components/AdBanner';
 import { AdsterraBanner } from '../components/AdsterraBanner';
 
 export const HomePage: React.FC = () => {
@@ -358,9 +357,6 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Inline Native Ad Slot */}
-          <AdBanner slotName="profile_inline" />
-
           {/* Network Banner (320x50) */}
           <AdsterraBanner />
 
@@ -405,11 +401,6 @@ export const HomePage: React.FC = () => {
 
         </section>
       </main>
-
-      {/* Footer Banner */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-6 w-full">
-        <AdBanner slotName="footer_banner" />
-      </div>
 
       <Footer />
 

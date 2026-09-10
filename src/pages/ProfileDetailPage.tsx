@@ -26,7 +26,6 @@ import { Footer } from '../components/Footer';
 import { StoryViewerModal } from '../components/StoryViewerModal';
 import { ContactModal } from '../components/ContactModal';
 import { ShareModal } from '../components/ShareModal';
-import { AdBanner } from '../components/AdBanner';
 import { AdsterraBanner } from '../components/AdsterraBanner';
 
 export const ProfileDetailPage: React.FC = () => {
@@ -185,10 +184,6 @@ export const ProfileDetailPage: React.FC = () => {
                       </span>
                     )}
                   </div>
-
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-black/60 text-white backdrop-blur-md">
-                    {profile.views || 0} views
-                  </span>
                 </div>
 
                 {/* Story Mode Floating Trigger */}
@@ -363,9 +358,6 @@ export const ProfileDetailPage: React.FC = () => {
                 </div>
               </div>
             )}
-
-            {/* In-page Ad Banner */}
-            <AdBanner slotName="profile_inline" profileSlug={profile.slug} />
 
             {/* Network Banner (320x50) */}
             <AdsterraBanner />

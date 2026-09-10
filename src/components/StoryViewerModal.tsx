@@ -16,7 +16,6 @@ import {
   Quote
 } from 'lucide-react';
 import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
-import { AdBanner } from './AdBanner';
 import { trackTelemetry } from '../lib/api';
 import { logEvent } from '../lib/analytics';
 
@@ -341,11 +340,6 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
             <p className="text-sm text-slate-200 leading-relaxed max-w-sm">
               {currentSlide.text}
             </p>
-
-            {/* Slide Sponsor Tag if applicable */}
-            <div className="pointer-events-auto pt-1">
-              <AdBanner slotName="story_sponsor" profileSlug={profile.slug} />
-            </div>
 
             {/* CTA button inside slide */}
             {currentSlide.ctaText && (

@@ -273,7 +273,7 @@ export const AdminDashboardPage: React.FC = () => {
         )}
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-5 space-y-1">
             <div className="flex items-center justify-between text-slate-400 text-xs">
               <span>Candidate Portfolios</span>
@@ -285,39 +285,6 @@ export const AdminDashboardPage: React.FC = () => {
             <p className="text-[11px] text-emerald-400 font-medium">
               {publishedCount} Published • {profiles.length - publishedCount} Drafts
             </p>
-          </div>
-
-          <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-5 space-y-1">
-            <div className="flex items-center justify-between text-slate-400 text-xs">
-              <span>Cumulative Views</span>
-              <Eye className="w-4 h-4 text-amber-400" />
-            </div>
-            <div className="text-2xl sm:text-3xl font-bold font-serif-luxury text-white">
-              {totalViews.toLocaleString()}
-            </div>
-            <p className="text-[11px] text-slate-400">Tracked via Express API</p>
-          </div>
-
-          <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-5 space-y-1">
-            <div className="flex items-center justify-between text-slate-400 text-xs">
-              <span>Story Mode Opens</span>
-              <Play className="w-4 h-4 text-rose-400" />
-            </div>
-            <div className="text-2xl sm:text-3xl font-bold font-serif-luxury text-white">
-              {analytics?.totalStoryViews || 412}
-            </div>
-            <p className="text-[11px] text-slate-400">Interactive chapters watched</p>
-          </div>
-
-          <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-5 space-y-1">
-            <div className="flex items-center justify-between text-slate-400 text-xs">
-              <span>Direct Inquiries</span>
-              <Heart className="w-4 h-4 text-rose-400" />
-            </div>
-            <div className="text-2xl sm:text-3xl font-bold font-serif-luxury text-white">
-              {analytics?.totalContactClicks || 184}
-            </div>
-            <p className="text-[11px] text-slate-400">WhatsApp &amp; Email leads</p>
           </div>
         </div>
 
@@ -411,7 +378,6 @@ export const AdminDashboardPage: React.FC = () => {
                       <th className="py-3.5 px-4 font-semibold">Slug Route</th>
                       <th className="py-3.5 px-4 font-semibold">Location &amp; Role</th>
                       <th className="py-3.5 px-4 font-semibold">Status</th>
-                      <th className="py-3.5 px-4 font-semibold">Views</th>
                       <th className="py-3.5 px-4 font-semibold">Story Mode</th>
                       <th className="py-3.5 px-4 font-semibold text-right">Actions</th>
                     </tr>
@@ -471,10 +437,6 @@ export const AdminDashboardPage: React.FC = () => {
                             {p.published ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                             <span>{p.published ? 'Published' : 'Draft'}</span>
                           </button>
-                        </td>
-
-                        <td className="py-3.5 px-4 font-mono text-slate-300">
-                          {p.views || 0}
                         </td>
 
                         <td className="py-3.5 px-4">
@@ -733,150 +695,6 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* SECTION 2: NATIVE SPONSOR SLOTS */}
-            <div>
-              <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">
-                Native Partner &amp; Sponsor Placements
-              </h4>
-              <div className="space-y-6">
-                {adSettings.slots.map((slot, index) => (
-                <div
-                  key={slot.id}
-                  className="bg-slate-950/80 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-md"
-                >
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-white text-sm uppercase tracking-wider">
-                        {slot.slotName.replace('_', ' ')}
-                      </span>
-                      <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
-                        ID: {slot.id}
-                      </span>
-                    </div>
-
-                    <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold">
-                      <input
-                        type="checkbox"
-                        checked={slot.enabled}
-                        onChange={(e) => {
-                          const updated = [...adSettings.slots];
-                          updated[index] = { ...slot, enabled: e.target.checked };
-                          setAdSettings({ ...adSettings, slots: updated });
-                        }}
-                        className="rounded border-slate-700 text-rose-600 focus:ring-rose-500 w-4 h-4"
-                      />
-                      <span className={slot.enabled ? 'text-emerald-400' : 'text-slate-500'}>
-                        {slot.enabled ? 'Slot Active' : 'Slot Disabled'}
-                      </span>
-                    </label>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    <div>
-                      <label className="block text-slate-400 mb-1 font-medium">Sponsor Name</label>
-                      <input
-                        type="text"
-                        value={slot.sponsorName}
-                        onChange={(e) => {
-                          const updated = [...adSettings.slots];
-                          updated[index] = { ...slot, sponsorName: e.target.value };
-                          setAdSettings({ ...adSettings, slots: updated });
-                        }}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white outline-none focus:border-rose-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-slate-400 mb-1 font-medium">Badge Text</label>
-                      <input
-                        type="text"
-                        value={slot.badgeText || ''}
-                        onChange={(e) => {
-                          const updated = [...adSettings.slots];
-                          updated[index] = { ...slot, badgeText: e.target.value };
-                          setAdSettings({ ...adSettings, slots: updated });
-                        }}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white outline-none focus:border-rose-500"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="block text-slate-400 mb-1 font-medium">Ad Headline / Title</label>
-                      <input
-                        type="text"
-                        value={slot.title}
-                        onChange={(e) => {
-                          const updated = [...adSettings.slots];
-                          updated[index] = { ...slot, title: e.target.value };
-                          setAdSettings({ ...adSettings, slots: updated });
-                        }}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white outline-none focus:border-rose-500"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="block text-slate-400 mb-1 font-medium">Description</label>
-                      <textarea
-                        rows={2}
-                        value={slot.description}
-                        onChange={(e) => {
-                          const updated = [...adSettings.slots];
-                          updated[index] = { ...slot, description: e.target.value };
-                          setAdSettings({ ...adSettings, slots: updated });
-                        }}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white outline-none focus:border-rose-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-slate-400 mb-1 font-medium">Destination URL</label>
-                      <input
-                        type="url"
-                        value={slot.linkUrl}
-                        onChange={(e) => {
-                          const updated = [...adSettings.slots];
-                          updated[index] = { ...slot, linkUrl: e.target.value };
-                          setAdSettings({ ...adSettings, slots: updated });
-                        }}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white outline-none focus:border-rose-500 font-mono"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-slate-400 mb-1 font-medium">CTA Button Label</label>
-                      <input
-                        type="text"
-                        value={slot.ctaText}
-                        onChange={(e) => {
-                          const updated = [...adSettings.slots];
-                          updated[index] = { ...slot, ctaText: e.target.value };
-                          setAdSettings({ ...adSettings, slots: updated });
-                        }}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white outline-none focus:border-rose-500"
-                      />
-                    </div>
-
-                    {slot.imageUrl !== undefined && (
-                      <div className="sm:col-span-2">
-                        <label className="block text-slate-400 mb-1 font-medium">Image URL</label>
-                        <input
-                          type="url"
-                          value={slot.imageUrl || ''}
-                          onChange={(e) => {
-                            const updated = [...adSettings.slots];
-                            updated[index] = { ...slot, imageUrl: e.target.value };
-                            setAdSettings({ ...adSettings, slots: updated });
-                          }}
-                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white outline-none focus:border-rose-500 font-mono"
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-              </div>
-            </div>
           </div>
         )}
 
@@ -884,87 +702,27 @@ export const AdminDashboardPage: React.FC = () => {
         {activeTab === 'analytics' && (
           <div className="space-y-6">
             <div>
-              <h3 className="text-xl font-bold font-serif-luxury text-white">Platform Analytics &amp; Telemetry</h3>
-              <p className="text-xs text-slate-400">
-                Lightweight, compliant session telemetry tracked directly via Express API endpoints.
+              <h3 className="text-xl font-bold font-serif-luxury text-white">Google Analytics</h3>
+              <p className="text-xs text-slate-400 mt-2 max-w-xl">
+                Traffic and engagement metrics (page views, story clicks, interactions) are tracked natively using Google Analytics 4 (Measurement ID: G-ZT7QE0CRY5). 
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Leaderboard */}
-              <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-6 space-y-4">
-                <h4 className="font-bold text-white text-sm flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-rose-400" />
-                  <span>Top Viewed Portfolios</span>
-                </h4>
-
-                <div className="space-y-3">
-                  {profiles
-                    .slice()
-                    .sort((a, b) => (b.views || 0) - (a.views || 0))
-                    .slice(0, 5)
-                    .map((p, idx) => (
-                      <div
-                        key={p.id}
-                        className="flex items-center justify-between p-3 rounded-2xl bg-slate-900 border border-slate-800 text-xs"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="w-5 text-center font-bold text-slate-500">#{idx + 1}</span>
-                          <img
-                            src={p.image || DEFAULT_AVATAR_PLACEHOLDER}
-                            alt={p.fullName}
-                            referrerPolicy="no-referrer"
-                            className="w-8 h-8 rounded-lg object-cover"
-                          />
-                          <div>
-                            <span className="font-bold text-white block">{p.fullName}</span>
-                            <span className="text-slate-500 text-[11px]">{p.profession}</span>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-bold text-amber-400 font-mono">{p.views || 0}</span>
-                          <span className="text-[10px] text-slate-500 block">views</span>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-
-              {/* Conversion Metrics */}
-              <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-6 space-y-4">
-                <h4 className="font-bold text-white text-sm flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-emerald-400" />
-                  <span>Interaction Breakdown</span>
-                </h4>
-
-                <div className="space-y-3 text-xs">
-                  <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 flex justify-between items-center">
-                    <div>
-                      <span className="font-bold text-white block">Story Mode Completion Rate</span>
-                      <span className="text-[11px] text-slate-400">Viewers who finish all story chapters</span>
-                    </div>
-                    <span className="text-lg font-bold text-emerald-400 font-mono">68.4%</span>
-                  </div>
-
-                  <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 flex justify-between items-center">
-                    <div>
-                      <span className="font-bold text-white block">Contact Inquiry Rate</span>
-                      <span className="text-[11px] text-slate-400">Viewers revealing WhatsApp / phone / email</span>
-                    </div>
-                    <span className="text-lg font-bold text-rose-400 font-mono">14.2%</span>
-                  </div>
-
-                  <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 flex justify-between items-center">
-                    <div>
-                      <span className="font-bold text-white block">Sponsored Ad Engagement</span>
-                      <span className="text-[11px] text-slate-400">Total clicks on partner banners</span>
-                    </div>
-                    <span className="text-lg font-bold text-amber-400 font-mono">
-                      {analytics?.totalAdClicks || 96} clicks
-                    </span>
-                  </div>
-                </div>
-              </div>
+            <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-8 flex flex-col items-center justify-center text-center space-y-4">
+              <BarChart3 className="w-12 h-12 text-rose-400 mb-2" />
+              <h4 className="text-lg font-bold text-white">View Complete Analytics</h4>
+              <p className="text-sm text-slate-400 max-w-md">
+                Please log in to your Google Analytics dashboard to view real-time traffic, candidate profile popularity, and visitor engagement statistics.
+              </p>
+              <a 
+                href="https://analytics.google.com/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="mt-4 px-6 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold text-sm flex items-center gap-2 transition-colors"
+              >
+                <span>Open Google Analytics</span>
+                <ExternalLink className="w-4 h-4" />
+              </a>
             </div>
           </div>
         )}

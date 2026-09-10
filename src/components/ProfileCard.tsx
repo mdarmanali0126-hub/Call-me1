@@ -122,12 +122,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onOpenStory, 
         )}
 
         {/* Footer actions */}
-        <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-1 text-[11px] text-slate-400">
-            <Eye className="w-3.5 h-3.5" />
-            <span>{profile.views || 0} views</span>
-          </div>
-
+        <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
           <div className="flex items-center gap-2">
             {onOpenContact && (
               <button
