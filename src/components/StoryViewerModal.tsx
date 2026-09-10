@@ -18,6 +18,7 @@ import {
 import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 import { AdBanner } from './AdBanner';
 import { trackTelemetry } from '../lib/api';
+import { logEvent } from '../lib/analytics';
 
 interface StoryViewerModalProps {
   profile: Profile;
@@ -81,13 +82,18 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
         profileSlug: profile.slug,
         timestamp: new Date().toISOString()
       });
+      logEvent('story_open', 'Story', profile.slug);
     }
   }, [isOpen, initialSlideIndex, profile.slug]);
 
   // Navigation handlers
   const goToNext = useCallback(() => {
     if (currentIndex < slides.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
+      setCurrentIndex((prev) => {
+        const nextIdx = prev + 1;
+        logEvent('story_progress', 'Story', `${profile.slug} - Chapter ${nextIdx + 1}`);
+        return nextIdx;
+      });
       setProgress(0);
       playTone(580);
     } else {
@@ -97,6 +103,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
         profileSlug: profile.slug,
         timestamp: new Date().toISOString()
       });
+      logEvent('story_complete', 'Story', profile.slug);
       onClose();
     }
   }, [currentIndex, slides.length, profile.slug, onClose, playTone]);

@@ -16,6 +16,7 @@ import {
 import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 import { fetchPublicProfiles, trackTelemetry } from '../lib/api';
 import { updateSEO } from '../lib/seo';
+import { logEvent } from '../lib/analytics';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { ProfileCard } from '../components/ProfileCard';
@@ -111,9 +112,6 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
-      {/* Header Ad Slot */}
-      <AdBanner slotName="header_banner" />
-
       {/* Navigation */}
       <Navbar onSearchClick={() => setSearchModalOpen(true)} />
 
@@ -123,16 +121,16 @@ export const HomePage: React.FC = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="text-center max-w-3xl mx-auto space-y-4">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold shadow-xs">
-                <Sparkles className="w-3.5 h-3.5 text-rose-500" />
-                <span>Modern Matrimonial Storytelling</span>
+                <ShieldCheck className="w-3.5 h-3.5 text-rose-500" />
+                <span>Premium Matrimonial Platform</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 font-serif-luxury leading-[1.15]">
-                Where Real Lives Become <span className="text-rose-600 italic">Beautiful Proposals</span>
+                Find Your <span className="text-rose-600 italic">Perfect Match</span>
               </h1>
 
               <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-                Step beyond flat bios. Explore candidates through immersive Story Mode presentations, personal values, and direct lifelong companionship proposals.
+                Discover verified, highly compatible female profiles tailored to your values and lifestyle. Browse our exclusive collection of premium matrimonial candidates.
               </p>
 
               {/* Quick search input */}
@@ -157,7 +155,11 @@ export const HomePage: React.FC = () => {
                   )}
                   <button
                     type="button"
-                    onClick={() => {}}
+                    onClick={() => {
+                      if (searchQuery.trim()) {
+                        logEvent('search', 'Home', searchQuery);
+                      }
+                    }}
                     className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white text-xs font-bold shrink-0 shadow-xs transition-all"
                   >
                     Find Profiles
@@ -240,6 +242,35 @@ export const HomePage: React.FC = () => {
           </div>
         </section>
 
+        {/* Trust Badges Section */}
+        <section className="bg-white border-b border-slate-200/80 py-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center divide-y md:divide-y-0 md:divide-x md:divide-slate-100">
+              <div className="px-6 py-4 md:py-0">
+                <div className="w-14 h-14 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-4 border border-rose-100 shadow-sm">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold font-serif-luxury text-slate-900 mb-2">100% Verified Profiles</h3>
+                <p className="text-sm text-slate-500">Every candidate is carefully vetted to ensure genuine matrimonial intent and authentic backgrounds.</p>
+              </div>
+              <div className="px-6 py-4 md:py-0">
+                <div className="w-14 h-14 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center mx-auto mb-4 border border-slate-200 shadow-sm">
+                  <Heart className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold font-serif-luxury text-slate-900 mb-2">Immersive Story Mode</h3>
+                <p className="text-sm text-slate-500">Go beyond flat bios. Discover personalities through interactive chapters covering values, career, and family.</p>
+              </div>
+              <div className="px-6 py-4 md:py-0">
+                <div className="w-14 h-14 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-100 shadow-sm">
+                  <Users className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold font-serif-luxury text-slate-900 mb-2">Privacy Protected</h3>
+                <p className="text-sm text-slate-500">Contact information is secured and only accessible through formal inquiry channels to maintain exclusivity.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Directory Section */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Controls & Filter Bar */}
@@ -247,9 +278,9 @@ export const HomePage: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-2xl font-bold font-serif-luxury text-slate-900">
-                  Published Candidate Portfolios
+                  Browse Premium Candidates
                 </h2>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-200 text-slate-700">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">
                   {filteredProfiles.length} Available
                 </span>
               </div>
@@ -282,6 +313,18 @@ export const HomePage: React.FC = () => {
                 <option value="all">All Locations</option>
                 {countries.filter((c) => c !== 'all').map((c) => (
                   <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+
+              {/* Profession Select */}
+              <select
+                value={selectedProfession}
+                onChange={(e) => setSelectedProfession(e.target.value)}
+                className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium outline-none"
+              >
+                <option value="all">All Professions</option>
+                {professions.filter((p) => p !== 'all').map((p) => (
+                  <option key={p} value={p}>{p}</option>
                 ))}
               </select>
 
@@ -325,7 +368,7 @@ export const HomePage: React.FC = () => {
           {loading ? (
             <div className="py-20 text-center space-y-3">
               <div className="w-10 h-10 border-3 border-rose-600 border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-xs text-slate-500 font-medium">Retrieving verified portfolios via Express API...</p>
+              <p className="text-xs text-slate-500 font-medium">Retrieving verified profiles...</p>
             </div>
           ) : filteredProfiles.length === 0 ? (
             <div className="py-20 text-center bg-white rounded-3xl border border-slate-200 p-8 space-y-4">
@@ -360,20 +403,6 @@ export const HomePage: React.FC = () => {
             </div>
           )}
 
-          {/* Architecture info note */}
-          <div id="about" className="mt-20 p-8 rounded-3xl bg-slate-900 text-slate-300 border border-slate-800">
-            <div className="max-w-3xl">
-              <span className="text-xs font-bold uppercase tracking-widest text-amber-400 block mb-2">
-                Proven Architecture
-              </span>
-              <h3 className="text-2xl font-bold text-white font-serif-luxury mb-3">
-                Built on the "Call Me" High-Performance Paradigm
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed space-y-2">
-                This independent production platform is decoupled into a high-speed Vite React SPA, an Express serverless layer deployable to Vercel, and direct Firebase Web SDK integration for real-time admin management. Public visitors query data through the optimized Express API while admins leverage authenticated Firestore CRUD with zero reliance on heavy server-side frameworks.
-              </p>
-            </div>
-          </div>
         </section>
       </main>
 

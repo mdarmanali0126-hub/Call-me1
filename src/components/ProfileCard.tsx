@@ -15,7 +15,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onOpenStory, 
   return (
     <div className="group bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden relative">
       {/* Top Image & Visual Header */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
+      <div className="relative aspect-[4/5] w-full overflow-hidden bg-slate-100">
         <img
           src={profile.image || DEFAULT_AVATAR_PLACEHOLDER}
           alt={profile.fullName}
@@ -29,10 +29,12 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onOpenStory, 
         {/* Badges Top Row */}
         <div className="absolute top-3 inset-x-3 flex items-center justify-between z-10">
           <div className="flex items-center gap-1.5">
-            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/95 text-slate-900 shadow-sm backdrop-blur-md flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              Verified
-            </span>
+            {profile.verified !== false && (
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/95 text-slate-900 shadow-sm backdrop-blur-md flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                Verified
+              </span>
+            )}
 
             {profile.featured && (
               <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500 text-white shadow-sm flex items-center gap-1">

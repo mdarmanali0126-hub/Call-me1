@@ -16,21 +16,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchClick }) => {
   return (
     <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-18">
+        <div className="flex items-center justify-between py-2 min-h-[72px] lg:min-h-[88px]">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 via-amber-600 to-rose-500 flex items-center justify-center text-white shadow-md shadow-rose-500/20 group-hover:scale-105 transition-transform duration-200">
-              <Heart className="w-5 h-5 fill-white text-white" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xl font-bold tracking-tight text-slate-900 font-serif-luxury">CALL ME</span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200/60">
-                  MATRIMONIAL
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 font-medium -mt-0.5">Bespoke Proposals &amp; Story Portfolios</p>
-            </div>
+          <Link to="/" className="flex items-center group shrink-0">
+            <img 
+              src="https://iili.io/nFUR3HN.png" 
+              alt="Call Me - Find Your Perfect Match"
+              className="w-[140px] sm:w-[185px] lg:w-[240px] h-auto object-contain shrink-0 transition-transform duration-200 group-hover:scale-105" 
+            />
           </Link>
 
           {/* Desktop Navigation */}

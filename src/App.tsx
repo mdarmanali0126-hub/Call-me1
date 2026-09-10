@@ -8,10 +8,12 @@ import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { AdminProfileEditPage } from './pages/AdminProfileEditPage';
 import { AdminProtectedRoute } from './components/AdminProtectedRoute';
 import { NetworkAdsLoader } from './components/NetworkAdsLoader';
+import { AnalyticsTracker } from './components/AnalyticsTracker';
 
 export default function App() {
   return (
     <BrowserRouter>
+      <AnalyticsTracker />
       {/* Global Network Ads Controller (Popunder & Social Bar) */}
       <NetworkAdsLoader />
 

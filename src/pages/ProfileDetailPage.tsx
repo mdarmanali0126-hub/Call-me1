@@ -20,6 +20,7 @@ import {
 import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 import { fetchPublicProfileBySlug, fetchPublicProfiles, recordProfileView, trackTelemetry } from '../lib/api';
 import { updateSEO, injectProfileJsonLd } from '../lib/seo';
+import { logEvent } from '../lib/analytics';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { StoryViewerModal } from '../components/StoryViewerModal';
@@ -79,6 +80,9 @@ export const ProfileDetailPage: React.FC = () => {
           profileSlug: data.slug,
           timestamp: new Date().toISOString()
         });
+        
+        // Google Analytics
+        logEvent('view_item', 'Profile', data.slug);
 
         // Load other related profiles
         fetchPublicProfiles().then((all) => {
@@ -105,7 +109,7 @@ export const ProfileDetailPage: React.FC = () => {
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-4">
           <div className="w-12 h-12 border-3 border-rose-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-medium text-slate-600">Retrieving portfolio via Express API...</p>
+          <p className="text-sm font-medium text-slate-600">Loading portfolio...</p>
         </div>
         <Footer />
       </div>
@@ -168,10 +172,12 @@ export const ProfileDetailPage: React.FC = () => {
                 {/* Top Overlay Badges */}
                 <div className="absolute top-4 inset-x-4 flex items-center justify-between z-10">
                   <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/95 text-slate-900 shadow-md backdrop-blur-md flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                      Verified Profile
-                    </span>
+                    {profile.verified !== false && (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/95 text-slate-900 shadow-md backdrop-blur-md flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                        Verified Profile
+                      </span>
+                    )}
                     {profile.featured && (
                       <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500 text-white shadow-md flex items-center gap-1">
                         <Sparkles className="w-3.5 h-3.5 fill-white" />
@@ -264,7 +270,10 @@ export const ProfileDetailPage: React.FC = () => {
                 <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setIsContactOpen(true)}
+                    onClick={() => {
+                      logEvent('open_contact_modal', 'Engagement', profile.slug);
+                      setIsContactOpen(true);
+                    }}
                     className="flex-1 py-3.5 px-6 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-md shadow-rose-600/30 flex items-center justify-center gap-2 transition-all transform active:scale-95"
                   >
                     <Heart className="w-4 h-4 fill-white" />

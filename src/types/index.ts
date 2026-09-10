@@ -44,6 +44,7 @@ export interface Profile {
   publicContact: PublicContact;
   published: boolean;
   featured?: boolean;
+  verified?: boolean;
   views: number;
   story: ProfileStory;
   tags: string[];

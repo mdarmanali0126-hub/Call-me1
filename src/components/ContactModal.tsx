@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 import { trackTelemetry } from '../lib/api';
+import { logEvent } from '../lib/analytics';
 
 interface ContactModalProps {
   profile: Profile;
@@ -41,6 +42,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({ profile, isOpen, onC
       metadata: { method, name: profile.fullName },
       timestamp: new Date().toISOString()
     });
+    logEvent('contact_click', 'Contact', `${method} - ${profile.slug}`);
   };
 
   const whatsappCleanNumber = contact.whatsapp ? contact.whatsapp.replace(/[^0-9]/g, '') : '';
