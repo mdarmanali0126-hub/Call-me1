@@ -338,8 +338,10 @@ export const HomePage: React.FC = () => {
               >
                 <option value="all">All Marital Statuses</option>
                 <option value="Never Married">Never Married</option>
+                <option value="Married">Married</option>
                 <option value="Divorced">Divorced</option>
                 <option value="Widowed">Widowed</option>
+                <option value="Separated">Separated</option>
               </select>
 
               {(searchQuery || selectedCountry !== 'all' || selectedStatus !== 'all' || onlyFeatured) && (

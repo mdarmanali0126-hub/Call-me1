@@ -446,10 +446,7 @@ export async function loginAdmin(email: string, pass: string): Promise<User> {
 
 export async function loginAdminWithGoogle(): Promise<User> {
   const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({
-    prompt: 'select_account',
-    login_hint: 'mdarmanali0126@gmail.com'
-  });
+  provider.setCustomParameters({ prompt: 'select_account' });
   const cred = await signInWithPopup(auth, provider);
   if (cred.user.email?.toLowerCase() === 'mdarmanali0126@gmail.com') {
     await syncAdminRecord(cred.user);

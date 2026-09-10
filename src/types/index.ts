@@ -31,7 +31,7 @@ export interface Profile {
   slug: string;
   fullName: string;
   age: number;
-  maritalStatus: 'Never Married' | 'Divorced' | 'Widowed' | 'Separated' | 'Single';
+  maritalStatus: 'Never Married' | 'Married' | 'Divorced' | 'Widowed' | 'Separated' | 'Single';
   city: string;
   state: string;
   country: string;

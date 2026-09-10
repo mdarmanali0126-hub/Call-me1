@@ -213,7 +213,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Authorized Admin:</span>
-                  <span className="text-emerald-300 font-semibold">{user?.email || 'mdarmanali0126@gmail.com'}</span>
+                  <span className="text-emerald-300 font-semibold">{user?.email || 'Authorized Admin'}</span>
                   {user?.providerData?.[0]?.providerId === 'google.com' && (
                     <span className="text-[9px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-800 font-medium">
                       Google

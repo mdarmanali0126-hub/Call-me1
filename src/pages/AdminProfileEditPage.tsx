@@ -291,10 +291,10 @@ export const AdminProfileEditPage: React.FC = () => {
                   className="w-full px-3.5 py-3 rounded-xl bg-slate-900 border border-slate-800 text-white outline-none focus:border-rose-500"
                 >
                   <option value="Never Married">Never Married</option>
+                  <option value="Married">Married</option>
                   <option value="Divorced">Divorced</option>
                   <option value="Widowed">Widowed</option>
                   <option value="Separated">Separated</option>
-                  <option value="Single">Single</option>
                 </select>
               </div>
 
