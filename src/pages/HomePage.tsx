@@ -337,11 +337,12 @@ export const HomePage: React.FC = () => {
                 className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium outline-none"
               >
                 <option value="all">All Marital Statuses</option>
-                <option value="Never Married">Never Married</option>
+                <option value="Single">Single</option>
                 <option value="Married">Married</option>
                 <option value="Divorced">Divorced</option>
                 <option value="Widowed">Widowed</option>
                 <option value="Separated">Separated</option>
+                <option value="Never Married">Never Married</option>
               </select>
 
               {(searchQuery || selectedCountry !== 'all' || selectedStatus !== 'all' || onlyFeatured) && (

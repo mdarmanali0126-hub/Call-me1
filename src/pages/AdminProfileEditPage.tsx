@@ -49,7 +49,7 @@ export const AdminProfileEditPage: React.FC = () => {
     slug: '',
     fullName: '',
     age: 28,
-    maritalStatus: 'Never Married',
+    maritalStatus: 'Single',
     city: '',
     state: '',
     country: 'United States',
@@ -290,11 +290,14 @@ export const AdminProfileEditPage: React.FC = () => {
                   onChange={(e) => setProfile({ ...profile, maritalStatus: e.target.value as any })}
                   className="w-full px-3.5 py-3 rounded-xl bg-slate-900 border border-slate-800 text-white outline-none focus:border-rose-500"
                 >
-                  <option value="Never Married">Never Married</option>
+                  <option value="Single">Single</option>
                   <option value="Married">Married</option>
                   <option value="Divorced">Divorced</option>
                   <option value="Widowed">Widowed</option>
                   <option value="Separated">Separated</option>
+                  {profile.maritalStatus && !['Single', 'Married', 'Divorced', 'Widowed', 'Separated'].includes(profile.maritalStatus) && (
+                    <option value={profile.maritalStatus}>{profile.maritalStatus}</option>
+                  )}
                 </select>
               </div>
 
