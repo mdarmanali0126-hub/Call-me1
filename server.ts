@@ -4,7 +4,7 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import { app, fetchLiveProfilesFromFirestore } from './server/app';
 
-const LOGO_URL = 'https://iili.io/nFUR3HN.png';
+const LOGO_URL = 'https://freepngimg.com/save/70086-logo-whatsapp-computer-viber-icons-free-download-image/1000x1000';
 
 
 function escapeHtml(unsafe) {

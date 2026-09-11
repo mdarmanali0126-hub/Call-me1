@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import https from 'https';
 
-const LOGO_URL = 'https://iili.io/nFUR3HN.png';
+const LOGO_URL = 'https://freepngimg.com/save/70086-logo-whatsapp-computer-viber-icons-free-download-image/1000x1000';
 const FIREBASE_PROJECT_ID = process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || 'lexical-layout-8pthm';
 const FIREBASE_DB_ID = process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || process.env.FIREBASE_DATABASE_ID || process.env.FIRESTORE_DATABASE_ID || 'ai-studio-b13ae003-c59b-43f9-ab4c-998699ecc304';
 const FIREBASE_API_KEY = process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY || 'AIzaSyBbOlWRBId2jdRWKgGfep6EFYZ5qXjvkV4';
