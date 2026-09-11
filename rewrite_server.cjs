@@ -1,4 +1,6 @@
-import path from 'path';
+const fs = require('fs');
+
+const serverContent = `import path from 'path';
 import fs from 'fs';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
@@ -6,25 +8,11 @@ import { app, fetchLiveProfilesFromFirestore } from './server/app';
 
 const LOGO_URL = 'https://iili.io/nFUR3HN.png';
 
-
-function escapeHtml(unsafe) {
-  if (!unsafe) return '';
-  return unsafe
-       .replace(/&/g, "&amp;")
-       .replace(/</g, "&lt;")
-       .replace(/>/g, "&gt;")
-       .replace(/"/g, "&quot;")
-       .replace(/'/g, "&#039;")
-       .replace(/\n/g, " ");
-}
-
 async function injectOpenGraphTags(html, url) {
-
   let title = 'Call Me — Find Your Perfect Match';
   let description = 'Discover verified matrimonial profiles and connect with the right match.';
   let image = LOGO_URL;
   let ogUrl = 'https://call-me1.vercel.app' + url;
-  let ogType = 'website';
 
   // Check if this is a profile page
   // A profile page is typically /<slug> but avoiding /admin, /api etc.
@@ -41,35 +29,34 @@ async function injectOpenGraphTags(html, url) {
       if (profile) {
         title = profile.fullName;
         if (profile.profession && profile.city) {
-          description = `${profile.profession} in ${profile.city}. ${profile.bio ? profile.bio.substring(0, 120) + '...' : ''}`;
+          description = \`\${profile.profession} in \${profile.city}. \${profile.bio ? profile.bio.substring(0, 120) + '...' : ''}\`;
         } else if (profile.bio) {
           description = profile.bio.substring(0, 150) + '...';
         } else {
-          description = `View ${profile.fullName}'s verified profile.`;
+          description = \`View \${profile.fullName}'s verified profile.\`;
         }
         image = profile.image && profile.image.trim() !== '' ? profile.image : LOGO_URL;
-        ogType = 'profile';
       }
     }
   } catch (err) {
     console.error('Error fetching profile for OG tags:', err);
   }
 
-  const ogTags = `
-    <meta property="og:title" content="${escapeHtml(title)}" />
-    <meta property="og:description" content="${escapeHtml(description)}" />
-    <meta property="og:image" content="${escapeHtml(image)}" />
-    <meta property="og:url" content="${escapeHtml(ogUrl)}" />
-    <meta property="og:type" content="${escapeHtml(ogType)}" />
+  const ogTags = \`
+    <meta property="og:title" content="\${title}" />
+    <meta property="og:description" content="\${description}" />
+    <meta property="og:image" content="\${image}" />
+    <meta property="og:url" content="\${ogUrl}" />
+    <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${escapeHtml(title)}" />
-    <meta name="twitter:description" content="${escapeHtml(description)}" />
-    <meta name="twitter:image" content="${escapeHtml(image)}" />
-    <title>${escapeHtml(title)}</title>
-  `;
+    <meta name="twitter:title" content="\${title}" />
+    <meta name="twitter:description" content="\${description}" />
+    <meta name="twitter:image" content="\${image}" />
+    <title>\${title}</title>
+  \`;
 
   // Inject before </head>
-  return html.replace(/<title>.*?<\/title>/g, '').replace('</head>', ogTags + '</head>');
+  return html.replace('</head>', ogTags + '</head>');
 }
 
 async function startServer() {
@@ -115,8 +102,12 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Call Me platform server running on http://0.0.0.0:${PORT}`);
+    console.log(\`Call Me platform server running on http://0.0.0.0:\${PORT}\`);
   });
 }
 
 startServer();
+`;
+
+fs.writeFileSync('server.ts', serverContent);
+console.log('Rewritten server.ts');

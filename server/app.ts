@@ -138,7 +138,7 @@ function decodeFirestoreDoc(doc: any): Profile | null {
 // -----------------------------------------------------------
 // Live Firestore Query Helper
 // -----------------------------------------------------------
-async function fetchLiveProfilesFromFirestore(forceFresh = false): Promise<Profile[]> {
+export async function fetchLiveProfilesFromFirestore(forceFresh = false): Promise<Profile[]> {
   const now = Date.now();
   if (!forceFresh && profilesCache.length > 0 && now - lastProfilesFetch < PROFILES_CACHE_TTL) {
     return profilesCache;
