@@ -126,10 +126,16 @@ export const AdminProfileEditPage: React.FC = () => {
         .replace(/^-|-$/g, '');
       const profileId = profile.id || `prof-${generatedSlug.replace(/[^a-zA-Z0-9-]/g, '') || Date.now()}`;
       
-      const updatedProfile = { ...profile, slug: generatedSlug };
+      const parsedAge = Number(profile.age);
+      const safeAge = !isNaN(parsedAge) && parsedAge >= 18 && parsedAge <= 80 
+        ? Math.round(parsedAge) 
+        : (parsedAge > 80 ? 80 : (parsedAge < 18 && parsedAge > 0 ? 18 : 28));
+
+      const updatedProfile = { ...profile, slug: generatedSlug, age: safeAge };
       const dataToSave = {
         ...updatedProfile,
         id: profileId,
+        age: safeAge,
         updatedAt: new Date().toISOString()
       };
 
@@ -272,15 +278,58 @@ export const AdminProfileEditPage: React.FC = () => {
               
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1.5">Age</label>
-                <input
-                  type="number"
-                  min={18}
-                  max={90}
-                  value={profile.age}
-                  onChange={(e) => setProfile({ ...profile, age: parseInt(e.target.value) || 28 })}
-                  className="w-full px-3.5 py-3 rounded-xl bg-slate-900 border border-slate-800 text-white outline-none focus:border-rose-500 text-sm"
-                />
+                <div className="flex items-center justify-between mb-1.5">
+                  <label htmlFor="candidate-age" className="block text-slate-300 font-semibold text-sm">Age (18 - 80)</label>
+                  <span className="text-xs text-slate-400">18 to 80</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    id="candidate-age"
+                    type="number"
+                    min={18}
+                    max={80}
+                    value={profile.age === undefined || profile.age === null ? '' : profile.age}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setProfile({ ...profile, age: '' as any });
+                      } else {
+                        const parsed = parseInt(val, 10);
+                        setProfile({ ...profile, age: isNaN(parsed) ? ('' as any) : parsed });
+                      }
+                    }}
+                    onBlur={() => {
+                      const num = Number(profile.age);
+                      if (isNaN(num) || num < 18) {
+                        setProfile({ ...profile, age: 18 });
+                      } else if (num > 80) {
+                        setProfile({ ...profile, age: 80 });
+                      } else {
+                        setProfile({ ...profile, age: Math.round(num) });
+                      }
+                    }}
+                    placeholder="e.g. 35"
+                    className="w-full px-3.5 py-3 rounded-xl bg-slate-900 border border-slate-800 text-white outline-none focus:border-rose-500 text-sm"
+                  />
+                  <select
+                    id="candidate-age-select"
+                    value={profile.age && Number(profile.age) >= 18 && Number(profile.age) <= 80 ? Number(profile.age) : ''}
+                    onChange={(e) => {
+                      const selected = parseInt(e.target.value, 10);
+                      if (!isNaN(selected)) {
+                        setProfile({ ...profile, age: selected });
+                      }
+                    }}
+                    className="w-full px-3.5 py-3 rounded-xl bg-slate-900 border border-slate-800 text-white outline-none focus:border-rose-500 text-sm"
+                  >
+                    <option value="">Or select age...</option>
+                    {Array.from({ length: 63 }, (_, i) => 18 + i).map((a) => (
+                      <option key={a} value={a}>
+                        {a} years old
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div>

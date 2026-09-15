@@ -394,6 +394,10 @@ export const ProfileDetailPage: React.FC = () => {
 
               <dl className="space-y-3 text-xs">
                 <div className="flex justify-between py-1.5 border-b border-slate-100">
+                  <dt className="text-slate-500">Age</dt>
+                  <dd className="font-semibold text-slate-900 text-right">{profile.age} years old</dd>
+                </div>
+                <div className="flex justify-between py-1.5 border-b border-slate-100">
                   <dt className="text-slate-500">Profession</dt>
                   <dd className="font-semibold text-slate-900 text-right">{profile.profession}</dd>
                 </div>
