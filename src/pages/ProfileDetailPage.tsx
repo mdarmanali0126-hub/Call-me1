@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   MapPin,
   Briefcase,
@@ -7,15 +7,14 @@ import {
   Heart,
   Share2,
   ShieldCheck,
-  Play,
   ArrowLeft,
   Calendar,
   Sparkles,
   Eye,
   MessageCircle,
   Quote,
-  ChevronRight,
-  User
+  User,
+  Phone
 } from 'lucide-react';
 import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 import { fetchPublicProfileBySlug, fetchPublicProfiles, recordProfileView, trackTelemetry } from '../lib/api';
@@ -23,14 +22,17 @@ import { updateSEO, injectProfileJsonLd } from '../lib/seo';
 import { logEvent } from '../lib/analytics';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
-import { StoryViewerModal } from '../components/StoryViewerModal';
 import { ContactModal } from '../components/ContactModal';
 import { ShareModal } from '../components/ShareModal';
+import { MessageChatModal } from '../components/MessageChatModal';
+import { VideoCallModal } from '../components/VideoCallModal';
+import { CallLimitModal } from '../components/CallLimitModal';
+import { AdInterstitialModal } from '../components/AdInterstitialModal';
 import { AdsterraBanner } from '../components/AdsterraBanner';
+import { useCallLimit } from '../hooks/useCallLimit';
 
 export const ProfileDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -38,10 +40,32 @@ export const ProfileDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Call Limit Management
+  const { callsUsed, callsRemaining, canCall, consumeCall } = useCallLimit();
+  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+  const [isAdInterstitialOpen, setIsAdInterstitialOpen] = useState(false);
+
   // Modals
-  const [isStoryOpen, setIsStoryOpen] = useState(searchParams.get('story') === '1');
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isMessageOpen, setIsMessageOpen] = useState(false);
+  const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
+
+  // Initiate call with limit check
+  const handleInitiateCall = () => {
+    if (!profile) return;
+    if (!canCall) {
+      setIsLimitModalOpen(true);
+    } else {
+      logEvent('open_video_call', 'Engagement', profile.slug);
+      setIsVideoCallOpen(true);
+    }
+  };
+
+  const handleAdInterstitialComplete = () => {
+    setIsAdInterstitialOpen(false);
+    setIsVideoCallOpen(true);
+  };
 
   useEffect(() => {
     if (!slug) return;
@@ -70,32 +94,27 @@ export const ProfileDetailPage: React.FC = () => {
           image: data.image,
           url: window.location.href
         });
-        injectProfileJsonLd(data);
 
-        // Record view telemetry
+        injectProfileJsonLd(data);
         recordProfileView(data.slug);
         trackTelemetry({
           type: 'page_view',
           profileSlug: data.slug,
           timestamp: new Date().toISOString()
         });
-        
-        // Google Analytics
-        logEvent('view_item', 'Profile', data.slug);
-
-        // Load other related profiles
-        fetchPublicProfiles().then((all) => {
-          if (isMounted) {
-            setRelatedProfiles(all.filter((p) => p.slug !== slug).slice(0, 3));
-          }
-        });
       })
       .catch((err) => {
-        if (isMounted) {
-          setError('Failed to load profile. Please try again.');
-          setLoading(false);
-        }
+        if (!isMounted) return;
+        setError(err.message || 'Error loading profile.');
+        setLoading(false);
       });
+
+    // Fetch related recommendations
+    fetchPublicProfiles().then((all) => {
+      if (isMounted) {
+        setRelatedProfiles(all.filter((p) => p.slug !== slug).slice(0, 3));
+      }
+    });
 
     return () => {
       isMounted = false;
@@ -104,11 +123,11 @@ export const ProfileDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
+      <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-4">
           <div className="w-12 h-12 border-3 border-rose-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-medium text-slate-600">Loading portfolio...</p>
+          <p className="text-sm font-medium text-slate-500">Retrieving candidate portfolio...</p>
         </div>
         <Footer />
       </div>
@@ -117,17 +136,21 @@ export const ProfileDetailPage: React.FC = () => {
 
   if (error || !profile) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
+      <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
         <Navbar />
-        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center max-w-md mx-auto space-y-4">
-          <User className="w-16 h-16 text-slate-300 mx-auto" />
-          <h2 className="text-2xl font-bold font-serif-luxury text-slate-900">Portfolio Not Found</h2>
-          <p className="text-sm text-slate-600">{error || 'This profile is either unpublished or does not exist.'}</p>
+        <div className="max-w-md mx-auto my-auto p-8 bg-white rounded-3xl border border-slate-200 text-center space-y-4 shadow-xl">
+          <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+            <Heart className="w-6 h-6" />
+          </div>
+          <h2 className="text-xl font-bold font-serif-luxury text-slate-900">Portfolio Unavailable</h2>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            {error || 'This candidate portfolio is currently unpublished or has been archived.'}
+          </p>
           <Link
             to="/"
-            className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors inline-flex items-center gap-2"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-3.5 h-3.5" />
             <span>Return to Directory</span>
           </Link>
         </div>
@@ -135,8 +158,6 @@ export const ProfileDetailPage: React.FC = () => {
       </div>
     );
   }
-
-  const hasStory = profile.story && profile.story.slides && profile.story.slides.length > 0;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
@@ -186,24 +207,6 @@ export const ProfileDetailPage: React.FC = () => {
                     )}
                   </div>
                 </div>
-
-                {/* Story Mode Floating Trigger */}
-                {hasStory && (
-                  <div className="relative z-20 mb-3">
-                    <button
-                      type="button"
-                      onClick={() => setIsStoryOpen(true)}
-                      className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-sm shadow-xl shadow-rose-950/50 flex items-center justify-center gap-2 transform active:scale-95 transition-all"
-                    >
-                      <span className="relative flex h-2.5 w-2.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white" />
-                      </span>
-                      <Play className="w-4 h-4 fill-white text-white" />
-                      <span>Watch Full Story Mode ({profile.story.slides.length} Chapters)</span>
-                    </button>
-                  </div>
-                )}
               </div>
 
               {/* Right Column: Key Details & Proposal */}
@@ -230,56 +233,72 @@ export const ProfileDetailPage: React.FC = () => {
 
                   {/* Highlight Stats Grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
-                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <span className="text-[11px] font-medium text-slate-500 block">Age &amp; Status</span>
+                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                      <span className="text-[11px] font-medium text-slate-600 block">Age &amp; Status</span>
                       <span className="text-sm font-bold text-slate-900">{profile.age} yrs • {profile.maritalStatus}</span>
                     </div>
-
-                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <span className="text-[11px] font-medium text-slate-500 block">Education</span>
-                      <span className="text-xs font-bold text-slate-900 truncate block" title={profile.education}>
+                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                      <span className="text-[11px] font-medium text-slate-600 block">Education</span>
+                      <span className="text-sm font-bold text-slate-900 truncate block" title={profile.education}>
                         {profile.education}
                       </span>
                     </div>
-
-                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <span className="text-[11px] font-medium text-slate-500 block">Preferred Contact</span>
-                      <span className="text-sm font-bold text-slate-900 capitalize">
-                        {profile.publicContact?.preferredMethod || 'WhatsApp'}
-                      </span>
-                    </div>
+                    {profile.religion && (
+                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                        <span className="text-[11px] font-medium text-slate-600 block">Faith / Outlook</span>
+                        <span className="text-sm font-bold text-slate-900 truncate block">{profile.religion}</span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Personal Proposal Message Card */}
-                  <div className="p-5 rounded-2xl bg-gradient-to-br from-rose-50/90 via-amber-50/40 to-white border border-rose-200/80 shadow-xs space-y-2">
-                    <div className="flex items-center gap-2 text-xs font-bold text-rose-800 uppercase tracking-wider">
-                      <Quote className="w-4 h-4 text-rose-600" />
-                      <span>Personal Matrimonial Proposal</span>
+                  {/* Personal Bio */}
+                  {profile.bio && (
+                    <div className="space-y-1.5 pt-2">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">Personal Background</h3>
+                      <p className="text-sm text-slate-700 leading-relaxed">{profile.bio}</p>
                     </div>
-                    <p className="text-xs sm:text-sm text-slate-800 leading-relaxed italic">
-                      "{profile.proposalMessage || profile.bio}"
-                    </p>
-                  </div>
+                  )}
+
+                  {/* Formal Matrimonial Proposal Message */}
+                  {profile.proposalMessage && (
+                    <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-rose-50 via-amber-50/40 to-white border border-rose-100 relative space-y-2">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-rose-700 uppercase tracking-wider">
+                        <Quote className="w-3.5 h-3.5" />
+                        <span>Direct Matrimonial Proposal Statement</span>
+                      </div>
+                      <p className="text-xs sm:text-sm text-slate-800 leading-relaxed italic">
+                        "{profile.proposalMessage}"
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                {/* Primary Action Buttons */}
+                {/* Primary Action Buttons: [ Message ] [ Call Me ] [ Share ] */}
                 <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      logEvent('open_contact_modal', 'Engagement', profile.slug);
-                      setIsContactOpen(true);
-                    }}
-                    className="flex-1 py-3.5 px-6 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-md shadow-rose-600/30 flex items-center justify-center gap-2 transition-all transform active:scale-95"
+                    onClick={() => setIsMessageOpen(true)}
+                    className="flex-1 min-w-[140px] py-3.5 px-6 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700/80 hover:border-pink-500/50 hover:shadow-[0_0_20px_rgba(244,63,94,0.22)] font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+                    title={`Message ${profile.fullName}`}
                   >
-                    <Heart className="w-4 h-4 fill-white" />
-                    <span>Connect &amp; View Contact Info</span>
+                    <MessageCircle className="w-4 h-4 text-pink-500 fill-pink-500/20" />
+                    <span>Message</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleInitiateCall}
+                    className="flex-1 min-w-[140px] py-3.5 px-6 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:via-pink-600 hover:to-rose-700 text-white font-bold text-sm shadow-md shadow-rose-600/30 flex items-center justify-center gap-2 transition-all transform active:scale-95 cursor-pointer"
+                    title={`Call ${profile.fullName}`}
+                  >
+                    <Phone className="w-4 h-4 fill-white text-white" />
+                    <span>Call Me</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setIsShareOpen(true)}
-                    className="py-3.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm border border-slate-200 flex items-center gap-2 transition-colors"
+                    className="py-3.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm border border-slate-200 flex items-center gap-2 transition-colors cursor-pointer"
                     title="Share Profile"
                   >
                     <Share2 className="w-4 h-4" />
@@ -291,22 +310,66 @@ export const ProfileDetailPage: React.FC = () => {
           </div>
         </section>
 
-        {/* Detailed Sections */}
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Main Info Column */}
-          <div className="lg:col-span-8 space-y-8">
-            {/* Biography & Outlook */}
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-4">
-              <h3 className="text-xl font-bold font-serif-luxury text-slate-900">
-                About {profile.fullName}
-              </h3>
-              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
-                {profile.bio}
-              </p>
+        {/* Detailed Attribute Matrix */}
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-6">
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
+            <h2 className="text-xl font-bold font-serif-luxury text-slate-900 border-b border-slate-100 pb-3">
+              Candidate Attributes &amp; Preferences
+            </h2>
 
-              {/* Tags */}
-              {profile.tags && profile.tags.length > 0 && (
-                <div className="pt-3 border-t border-slate-100 flex flex-wrap gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+              {profile.height && (
+                <div className="space-y-1">
+                  <span className="text-slate-600 font-medium">Height</span>
+                  <p className="font-semibold text-slate-900 text-sm">{profile.height}</p>
+                </div>
+              )}
+              {profile.motherTongue && (
+                <div className="space-y-1">
+                  <span className="text-slate-600 font-medium">Mother Tongue / Languages</span>
+                  <p className="font-semibold text-slate-900 text-sm">{profile.motherTongue}</p>
+                </div>
+              )}
+              {profile.religion && (
+                <div className="space-y-1">
+                  <span className="text-slate-600 font-medium">Religion &amp; Philosophy</span>
+                  <p className="font-semibold text-slate-900 text-sm">{profile.religion}</p>
+                </div>
+              )}
+              {profile.maritalStatus && (
+                <div className="space-y-1">
+                  <span className="text-slate-600 font-medium">Marital Status</span>
+                  <p className="font-semibold text-slate-900 text-sm">{profile.maritalStatus}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Hobbies & Interests */}
+            {profile.hobbies && profile.hobbies.length > 0 && (
+              <div className="pt-4 border-t border-slate-100 space-y-2">
+                <span className="text-xs font-bold text-slate-600 uppercase tracking-wider block">
+                  Interests &amp; Passions
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {profile.hobbies.map((hobby, i) => (
+                    <span
+                      key={i}
+                      className="px-3 py-1 rounded-full text-xs font-medium bg-rose-50 text-rose-800 border border-rose-100"
+                    >
+                      {hobby}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Profile Tags */}
+            {profile.tags && profile.tags.length > 0 && (
+              <div className="pt-4 border-t border-slate-100 space-y-2">
+                <span className="text-xs font-bold text-slate-600 uppercase tracking-wider block">
+                  Focus Tags
+                </span>
+                <div className="flex flex-wrap gap-2">
                   {profile.tags.map((tag, i) => (
                     <span
                       key={i}
@@ -316,190 +379,81 @@ export const ProfileDetailPage: React.FC = () => {
                     </span>
                   ))}
                 </div>
-              )}
-            </div>
-
-            {/* Story Mode Chapters Preview */}
-            {hasStory && (
-              <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-bold text-rose-600 uppercase tracking-wider block">
-                      Interactive Story
-                    </span>
-                    <h3 className="text-xl font-bold font-serif-luxury text-slate-900">
-                      {profile.story.title || 'Life in Perspective'}
-                    </h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsStoryOpen(true)}
-                    className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 transition-colors"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-white" />
-                    <span>Launch</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {profile.story.slides.map((slide, index) => (
-                    <div
-                      key={slide.id || index}
-                      onClick={() => setIsStoryOpen(true)}
-                      className="p-4 rounded-2xl bg-slate-50 hover:bg-rose-50/50 border border-slate-200/80 cursor-pointer transition-colors space-y-1.5 group"
-                    >
-                      <div className="flex items-center justify-between text-xs text-slate-500">
-                        <span className="font-semibold text-rose-600">Chapter {index + 1}</span>
-                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                      <h4 className="font-bold text-slate-900 text-sm">{slide.title}</h4>
-                      <p className="text-xs text-slate-600 line-clamp-2">{slide.text}</p>
-                    </div>
-                  ))}
-                </div>
               </div>
             )}
+          </div>
 
-            {/* Network Banner (320x50) */}
-            <AdsterraBanner slotName="profile_inline" />
+          {/* Network Banner (320x50) */}
+          <AdsterraBanner slotName="profile_inline" />
 
-            {/* Gallery if present */}
-            {profile.gallery && profile.gallery.filter(Boolean).length > 0 && (
-              <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-4">
-                <h3 className="text-xl font-bold font-serif-luxury text-slate-900">
-                  Portfolio Gallery
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {profile.gallery.filter(img => Boolean(img && img.trim())).map((imgUrl, i) => (
+          {/* Gallery if present */}
+          {profile.gallery && profile.gallery.filter(Boolean).length > 0 && (
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-4">
+              <h3 className="text-xl font-bold font-serif-luxury text-slate-900">
+                Portfolio Gallery
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {profile.gallery.filter(img => Boolean(img && img.trim())).map((imgUrl, i) => (
+                  <div key={i} className="aspect-square rounded-2xl overflow-hidden bg-slate-100">
                     <img
-                      key={i}
                       src={imgUrl}
-                      alt={`${profile.fullName} gallery ${i + 1}`}
+                      alt={`Gallery item ${i + 1}`}
                       referrerPolicy="no-referrer"
-                      className="w-full aspect-square object-cover rounded-2xl border border-slate-200 hover:scale-102 transition-transform cursor-pointer"
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
-            )}
-          </div>
-
-          {/* Sidebar Column: Specifications & Connect Box */}
-          <div className="lg:col-span-4 space-y-6">
-            {/* Quick Specs */}
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
-              <h4 className="font-bold font-serif-luxury text-slate-900 text-lg">
-                Key Background Attributes
-              </h4>
-
-              <dl className="space-y-3 text-xs">
-                <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <dt className="text-slate-500">Age</dt>
-                  <dd className="font-semibold text-slate-900 text-right">{profile.age} years old</dd>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <dt className="text-slate-500">Profession</dt>
-                  <dd className="font-semibold text-slate-900 text-right">{profile.profession}</dd>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <dt className="text-slate-500">Education</dt>
-                  <dd className="font-semibold text-slate-900 text-right max-w-[160px] truncate" title={profile.education}>
-                    {profile.education}
-                  </dd>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <dt className="text-slate-500">Current Residence</dt>
-                  <dd className="font-semibold text-slate-900 text-right">{profile.city}, {profile.country}</dd>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <dt className="text-slate-500">Marital Status</dt>
-                  <dd className="font-semibold text-slate-900 text-right">{profile.maritalStatus}</dd>
-                </div>
-                {profile.religion && (
-                  <div className="flex justify-between py-1.5 border-b border-slate-100">
-                    <dt className="text-slate-500">Beliefs / Tradition</dt>
-                    <dd className="font-semibold text-slate-900 text-right">{profile.religion}</dd>
-                  </div>
-                )}
-                {profile.height && (
-                  <div className="flex justify-between py-1.5 border-b border-slate-100">
-                    <dt className="text-slate-500">Height</dt>
-                    <dd className="font-semibold text-slate-900 text-right">{profile.height}</dd>
-                  </div>
-                )}
-                {profile.motherTongue && (
-                  <div className="flex justify-between py-1.5 border-b border-slate-100">
-                    <dt className="text-slate-500">Languages</dt>
-                    <dd className="font-semibold text-slate-900 text-right">{profile.motherTongue}</dd>
-                  </div>
-                )}
-              </dl>
-
-              {profile.hobbies && profile.hobbies.length > 0 && (
-                <div className="pt-2">
-                  <span className="text-[11px] font-semibold text-slate-500 block mb-2">Interests &amp; Passions</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {profile.hobbies.map((h, idx) => (
-                      <span key={idx} className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-[11px]">
-                        {h}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
-
-            {/* Direct Connect Card */}
-            <div className="p-6 rounded-3xl bg-gradient-to-br from-rose-900 to-slate-900 text-white space-y-4 shadow-lg">
-              <div className="flex items-center gap-2 text-xs font-semibold text-rose-300 uppercase tracking-wider">
-                <MessageCircle className="w-4 h-4" />
-                <span>Ready to Discuss?</span>
-              </div>
-              <h4 className="text-xl font-bold font-serif-luxury">
-                Initiate a Matrimonial Introduction
-              </h4>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Connect directly with {profile.fullName} via verified WhatsApp, telephone, or formal email proposal.
-              </p>
-              <button
-                type="button"
-                onClick={() => setIsContactOpen(true)}
-                className="w-full py-3 rounded-xl bg-white text-slate-900 font-bold text-xs hover:bg-rose-50 transition-colors shadow-xs"
-              >
-                Reveal Contact Channels
-              </button>
-            </div>
-          </div>
+          )}
         </section>
 
-        {/* Related Candidates */}
+        {/* Similar Candidates Section */}
         {relatedProfiles.length > 0 && (
-          <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 pt-12 border-t border-slate-200">
-            <h3 className="text-2xl font-bold font-serif-luxury text-slate-900 mb-6">
-              Other Verified Portfolios You May Wish to Explore
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {relatedProfiles.map((p) => (
+          <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-2xl font-bold font-serif-luxury text-slate-900">
+                  Recommended Matches
+                </h3>
+                <p className="text-xs text-slate-500">Other verified candidates with compatible preferences</p>
+              </div>
+              <Link to="/" className="text-xs font-bold text-rose-600 hover:text-rose-700">
+                View All Directory →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {relatedProfiles.map((rel) => (
                 <div
-                  key={p.id}
-                  className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center gap-4 hover:shadow-md transition-shadow"
+                  key={rel.id}
+                  className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-lg transition-all group"
                 >
-                  <img
-                    src={p.image || DEFAULT_AVATAR_PLACEHOLDER}
-                    alt={p.fullName}
-                    referrerPolicy="no-referrer"
-                    className="w-16 h-16 rounded-xl object-cover"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-slate-900 text-sm truncate">{p.fullName}</h4>
-                    <p className="text-xs text-slate-500 truncate">{p.profession}</p>
-                    <p className="text-xs text-slate-400">{p.city}, {p.country}</p>
-                    <Link
-                      to={`/profile/${p.slug}`}
-                      className="text-xs text-rose-600 font-semibold hover:underline mt-1 inline-block"
-                    >
-                      View Profile →
-                    </Link>
+                  <Link to={`/profile/${rel.slug}`} className="block relative aspect-[4/3] bg-slate-100">
+                    <img
+                      src={rel.image || DEFAULT_AVATAR_PLACEHOLDER}
+                      alt={rel.fullName}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-black/60 text-white backdrop-blur-md">
+                      {rel.age} yrs
+                    </div>
+                  </Link>
+                  <div className="p-4 space-y-2">
+                    <h4 className="font-bold font-serif-luxury text-slate-900 group-hover:text-rose-600 transition-colors">
+                      {rel.fullName}
+                    </h4>
+                    <p className="text-xs text-slate-500 truncate">{rel.profession}</p>
+                    <p className="text-[11px] text-slate-400">{rel.city}, {rel.country}</p>
+                    <div className="pt-2">
+                      <Link
+                        to={`/profile/${rel.slug}`}
+                        className="block text-center py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors"
+                      >
+                        View Profile
+                      </Link>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -514,16 +468,6 @@ export const ProfileDetailPage: React.FC = () => {
 
       <Footer />
 
-      {/* Story Mode Modal */}
-      {hasStory && (
-        <StoryViewerModal
-          profile={profile}
-          isOpen={isStoryOpen}
-          onClose={() => setIsStoryOpen(false)}
-          onOpenContact={() => setIsContactOpen(true)}
-        />
-      )}
-
       {/* Contact Channels Modal */}
       <ContactModal
         profile={profile}
@@ -537,6 +481,48 @@ export const ProfileDetailPage: React.FC = () => {
         isOpen={isShareOpen}
         onClose={() => setIsShareOpen(false)}
       />
+
+      {/* Message Chat Modal */}
+      <MessageChatModal
+        profile={profile}
+        isOpen={isMessageOpen}
+        onClose={() => setIsMessageOpen(false)}
+      />
+
+      {/* Simulated Video Call Modal */}
+      {isVideoCallOpen && (
+        <VideoCallModal
+          profile={profile}
+          isOpen={isVideoCallOpen}
+          onClose={() => setIsVideoCallOpen(false)}
+          onCallCompleted={() => consumeCall()}
+          onOpenContact={() => {
+            setIsVideoCallOpen(false);
+            setIsContactOpen(true);
+          }}
+        />
+      )}
+
+      {/* Call Limit Reached Modal */}
+      {isLimitModalOpen && (
+        <CallLimitModal
+          isOpen={isLimitModalOpen}
+          callsUsed={callsUsed}
+          onClose={() => setIsLimitModalOpen(false)}
+          onWatchAd={() => {
+            setIsLimitModalOpen(false);
+            setIsAdInterstitialOpen(true);
+          }}
+        />
+      )}
+
+      {/* 10-Second Sponsor Ad Interstitial */}
+      {isAdInterstitialOpen && (
+        <AdInterstitialModal
+          isOpen={isAdInterstitialOpen}
+          onComplete={handleAdInterstitialComplete}
+        />
+      )}
     </div>
   );
 };

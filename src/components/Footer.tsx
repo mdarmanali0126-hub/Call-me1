@@ -16,7 +16,7 @@ export const Footer: React.FC = () => {
               <span className="text-xl font-bold tracking-tight text-white font-serif-luxury">CALL ME</span>
             </div>
             <p className="text-sm text-slate-400 max-w-md leading-relaxed">
-              A bespoke matrimonial and personal story portfolio platform connecting thoughtful professionals seeking genuine, lifelong companionship. Designed with privacy, dignity, and authentic storytelling.
+              A bespoke matrimonial and personal discovery platform connecting thoughtful professionals seeking genuine, lifelong companionship. Designed with privacy, dignity, and authentic connections.
             </p>
             <div className="flex items-center gap-4 text-xs text-slate-400">
               <span className="flex items-center gap-1">
@@ -41,7 +41,7 @@ export const Footer: React.FC = () => {
                 <Link to="/?filter=featured" className="hover:text-white transition-colors">Featured Spotlights</Link>
               </li>
               <li>
-                <a href="#about" className="hover:text-white transition-colors">About the Architecture</a>
+                <a href="#about" className="hover:text-white transition-colors">About the Platform</a>
               </li>
               <li>
                 <Link to="/admin" className="hover:text-white transition-colors flex items-center gap-1 text-rose-400">
@@ -70,7 +70,7 @@ export const Footer: React.FC = () => {
           <p>© {new Date().getFullYear()} Call Me Platform. All rights reserved.</p>
           <div className="flex items-center gap-6">
             <span>Dynamic Slug Engine</span>
-            <span>Story Mode System</span>
+            <span>Video Call Preview System</span>
             <span>Vercel Deployable</span>
             <Link to="/admin/login" className="text-slate-400 hover:text-slate-200 transition-colors">
               Admin Login

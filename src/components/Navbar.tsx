@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Heart, Search, ShieldCheck, Sparkles, UserCheck, Menu, X, ShieldAlert } from 'lucide-react';
+import { Search, ShieldCheck, Sparkles, UserCheck, Menu, X } from 'lucide-react';
 
 interface NavbarProps {
   onSearchClick?: () => void;
@@ -14,7 +14,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchClick }) => {
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   return (
-    <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
+    <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-white/10 shadow-xs text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between py-2 min-h-[72px] lg:min-h-[88px]">
           {/* Logo */}
@@ -31,7 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchClick }) => {
             <Link
               to="/"
               className={`text-sm font-medium transition-colors ${
-                location.pathname === '/' ? 'text-rose-600 font-semibold' : 'text-slate-600 hover:text-slate-900'
+                location.pathname === '/' ? 'text-pink-500 font-semibold' : 'text-slate-300 hover:text-white'
               }`}
             >
               Browse Profiles
@@ -45,16 +45,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchClick }) => {
                   navigate('/?filter=featured#featured');
                 }
               }}
-              className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-1.5"
+              className="text-sm font-medium text-slate-300 hover:text-white transition-colors flex items-center gap-1.5"
             >
-              <Sparkles className="w-4 h-4 text-amber-500" />
+              <Sparkles className="w-4 h-4 text-pink-400" />
               Featured Spotlights
             </a>
 
-            <div className="h-4 w-px bg-slate-200" />
+            <div className="h-4 w-px bg-white/10" />
 
-            <div className="flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/70">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-500/30">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
               <span>Verified Portfolios</span>
             </div>
           </nav>
@@ -65,23 +65,23 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchClick }) => {
               <button
                 type="button"
                 onClick={onSearchClick}
-                className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-500 bg-slate-100 hover:bg-slate-200/80 rounded-lg transition-colors border border-slate-200"
+                className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-300 bg-zinc-900/90 hover:bg-zinc-800 rounded-xl transition-colors border border-white/10 hover:border-pink-500/30 cursor-pointer"
                 title="Search profiles"
               >
-                <Search className="w-3.5 h-3.5" />
+                <Search className="w-3.5 h-3.5 text-pink-400" />
                 <span>Search by name, city, role...</span>
               </button>
             )}
 
             <Link
               to={isAdminRoute ? '/' : '/admin'}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all ${
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl transition-all ${
                 isAdminRoute
-                  ? 'bg-slate-900 text-white hover:bg-slate-800 shadow-xs'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                  ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-xs'
+                  : 'bg-zinc-900 hover:bg-zinc-800 text-slate-300 hover:text-white border border-white/10'
               }`}
             >
-              <UserCheck className="w-3.5 h-3.5" />
+              <UserCheck className="w-3.5 h-3.5 text-pink-400" />
               <span>{isAdminRoute ? 'Exit Admin View' : 'Admin Portal'}</span>
             </Link>
           </div>
@@ -91,7 +91,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchClick }) => {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+              className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-zinc-900"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -101,26 +101,26 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchClick }) => {
 
         {/* Mobile menu dropdown */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-slate-200 space-y-3">
+          <div className="md:hidden py-4 border-t border-white/10 space-y-3 bg-slate-950">
             <Link
               to="/"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50"
+              className="block px-3 py-2 rounded-xl text-base font-medium text-slate-200 hover:bg-zinc-900"
             >
               Browse Profiles
             </Link>
             <Link
               to="/?filter=featured"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50"
+              className="block px-3 py-2 rounded-xl text-base font-medium text-slate-200 hover:bg-zinc-900"
             >
               Featured Spotlights
             </Link>
-            <div className="pt-2 border-t border-slate-100">
+            <div className="pt-2 border-t border-white/10">
               <Link
                 to="/admin"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-semibold text-rose-700 bg-rose-50"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold text-pink-400 bg-pink-500/10 border border-pink-500/20"
               >
                 <UserCheck className="w-4 h-4" />
                 <span>Admin Management Dashboard</span>

@@ -68,6 +68,7 @@ export const AdminProfileEditPage: React.FC = () => {
     },
     published: true,
     featured: false,
+    callVideoUrl: '',
     views: 0,
     tags: ['Family-Oriented', 'Career-Focused'],
     religion: '',
@@ -430,6 +431,41 @@ export const AdminProfileEditPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Call Video URL (Simulated Video Call Test Mode) */}
+            <div className="pt-3 border-t border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-slate-300 font-semibold text-sm">
+                  Call Video URL (Simulated Video Call)
+                </label>
+                <span className="text-[11px] text-pink-400 font-medium">Optional • Direct MP4</span>
+              </div>
+              <input
+                type="url"
+                value={profile.callVideoUrl || ''}
+                onChange={(e) => setProfile({ ...profile, callVideoUrl: e.target.value })}
+                placeholder="https://example.com/video.mp4"
+                className="w-full px-3.5 py-3 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white font-mono outline-none focus:border-rose-500"
+              />
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Optional. Enter a direct MP4 video URL for the simulated Call Me experience.
+              </p>
+              {profile.callVideoUrl && profile.callVideoUrl.trim() !== '' && (
+                <div className="text-[11px] pt-1">
+                  {!profile.callVideoUrl.toLowerCase().includes('.mp4') ? (
+                    <span className="text-amber-400 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      Notice: For best compatibility across browsers, ensure this URL points to a valid MP4 video.
+                    </span>
+                  ) : (
+                    <span className="text-emerald-400 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Direct MP4 format detected.
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Bio */}

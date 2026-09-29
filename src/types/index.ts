@@ -47,6 +47,7 @@ export interface Profile {
   verified?: boolean;
   views: number;
   story: ProfileStory;
+  callVideoUrl?: string;
   tags: string[];
   religion?: string;
   height?: string;

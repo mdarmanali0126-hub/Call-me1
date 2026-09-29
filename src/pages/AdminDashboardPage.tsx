@@ -49,7 +49,6 @@ import {
   invalidateAdvertisingCache,
   refreshServerProfilesCache
 } from '../lib/api';
-import { StoryViewerModal } from '../components/StoryViewerModal';
 
 export const AdminDashboardPage: React.FC = () => {
   const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
@@ -65,7 +64,6 @@ export const AdminDashboardPage: React.FC = () => {
 
   // Search & filter
   const [searchQuery, setSearchQuery] = useState('');
-  const [previewStoryProfile, setPreviewStoryProfile] = useState<Profile | null>(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -378,7 +376,7 @@ export const AdminDashboardPage: React.FC = () => {
                       <th className="py-3.5 px-4 font-semibold">Slug Route</th>
                       <th className="py-3.5 px-4 font-semibold">Location &amp; Role</th>
                       <th className="py-3.5 px-4 font-semibold">Status</th>
-                      <th className="py-3.5 px-4 font-semibold">Story Mode</th>
+                      <th className="py-3.5 px-4 font-semibold">Video Call</th>
                       <th className="py-3.5 px-4 font-semibold text-right">Actions</th>
                     </tr>
                   </thead>
@@ -440,17 +438,12 @@ export const AdminDashboardPage: React.FC = () => {
                         </td>
 
                         <td className="py-3.5 px-4">
-                          {p.story?.slides?.length > 0 ? (
-                            <button
-                              type="button"
-                              onClick={() => setPreviewStoryProfile(p)}
-                              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 text-[11px] font-semibold flex items-center gap-1 transition-colors"
-                            >
-                              <Play className="w-3 h-3 fill-amber-300" />
-                              <span>{p.story.slides.length} Slides</span>
-                            </button>
+                          {p.callVideoUrl && p.callVideoUrl.trim() !== '' ? (
+                            <span className="px-2 py-0.5 rounded-lg bg-pink-950/80 border border-pink-500/30 text-pink-300 text-[10px] font-semibold">
+                              MP4 Configured
+                            </span>
                           ) : (
-                            <span className="text-slate-500 text-[11px]">No slides</span>
+                            <span className="text-slate-500 text-[11px]">No Video</span>
                           )}
                         </td>
 
@@ -727,15 +720,6 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
         )}
       </main>
-
-      {/* Story Preview Modal */}
-      {previewStoryProfile && (
-        <StoryViewerModal
-          profile={previewStoryProfile}
-          isOpen={!!previewStoryProfile}
-          onClose={() => setPreviewStoryProfile(null)}
-        />
-      )}
     </div>
   );
 };

@@ -29,6 +29,7 @@ export const INITIAL_PROFILES: Profile[] = [
     },
     published: true,
     featured: true,
+    callVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     views: 1420,
     tags: ['Tech', 'Marathon', 'Jazz', 'Stanford Alumni', 'Family-Oriented'],
     religion: 'Hindu / Progressive',
