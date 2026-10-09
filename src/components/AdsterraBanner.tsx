@@ -8,15 +8,17 @@ interface AdsterraBannerProps {
 }
 
 export const AdsterraBanner: React.FC<AdsterraBannerProps> = ({ className = '', slotName }) => {
-  const [isEnabled, setIsEnabled] = useState(false);
+  const [isEnabled, setIsEnabled] = useState(true);
   const location = useLocation();
 
   useEffect(() => {
     let isMounted = true;
     fetchPublicAdvertising().then((settings) => {
-      if (isMounted) {
-        setIsEnabled(!!settings?.ads?.banner);
+      if (isMounted && settings?.ads) {
+        setIsEnabled(!!settings.ads.banner);
       }
+    }).catch(() => {
+      // Keep enabled on fetch error
     });
     return () => {
       isMounted = false;

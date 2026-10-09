@@ -545,7 +545,7 @@ export const AdminDashboardPage: React.FC = () => {
                     </p>
 
                     <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80 text-[10px] text-slate-400 font-mono truncate">
-                      pl31254996.profitableratecpm...
+                      pl31735759.profitableratecpm...
                     </div>
                   </div>
 
@@ -601,7 +601,7 @@ export const AdminDashboardPage: React.FC = () => {
                     </p>
 
                     <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80 text-[10px] text-slate-400 font-mono truncate">
-                      pl31254997.profitableratecpm...
+                      pl31735760.profitableratecpm...
                     </div>
                   </div>
 
@@ -657,7 +657,7 @@ export const AdminDashboardPage: React.FC = () => {
                     </p>
 
                     <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80 text-[10px] text-slate-400 font-mono truncate">
-                      320x50 iframe | key: b5007...
+                      320x50 iframe | key: 84654...
                     </div>
                   </div>
 

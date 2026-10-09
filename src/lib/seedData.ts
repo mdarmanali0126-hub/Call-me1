@@ -305,9 +305,9 @@ export const INITIAL_ADVERTISING_SETTINGS: AdvertisingSettings = {
     }
   ],
   ads: {
-    popunder: false,
-    socialBar: false,
-    banner: false
+    popunder: true,
+    socialBar: true,
+    banner: true
   },
   updatedAt: new Date().toISOString()
 };
