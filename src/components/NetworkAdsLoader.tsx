@@ -12,15 +12,19 @@ const SOCIAL_BAR_SCRIPT_ID = 'network-socialbar-script';
 const LEGACY_POPUNDER_SCRIPT_ID = 'adsterra-popunder-script';
 const LEGACY_SOCIAL_BAR_SCRIPT_ID = 'adsterra-socialbar-script';
 
+// Global execution guards to strictly guarantee one-time loading per application lifecycle
+let hasPopunderInitialized = false;
+let hasSocialBarInitialized = false;
+
 /**
- * NetworkAdsLoader handles independent loading and execution
- * of global network ads (Popunder and Social Bar) based on configuration.
+ * NetworkAdsLoader handles single global initialization of Popunder and Social Bar ad scripts.
  *
- * It guarantees:
- * 1. Zero duplicate script injections across route transitions and re-renders.
- * 2. Safe loading with error handling if scripts fail to load.
- * 3. Complete non-execution / DOM removal when disabled.
- * 4. Minimal single cached fetch to avoid unnecessary Firestore/network reads.
+ * Optimizations:
+ * 1. Loaded once through the top-level application layout in App.tsx.
+ * 2. Guaranteed zero duplicate executions on route changes or component re-renders via singleton flags.
+ * 3. Does not generate any redundant floating bar UI (relies solely on the official network script).
+ * 4. Automatic cleanup of any superseded or legacy script elements in the DOM.
+ * 5. Safe error handling if network or ad-blockers prevent script loading.
  */
 export const NetworkAdsLoader: React.FC = () => {
   const [adsConfig, setAdsConfig] = useState<NetworkAdSettings>({
@@ -32,13 +36,15 @@ export const NetworkAdsLoader: React.FC = () => {
   useEffect(() => {
     let isMounted = true;
 
-    fetchPublicAdvertising().then((settings) => {
-      if (isMounted && settings?.ads) {
-        setAdsConfig(settings.ads);
-      }
-    }).catch((err) => {
-      console.warn('Could not fetch advertising settings, using active defaults:', err);
-    });
+    fetchPublicAdvertising()
+      .then((settings) => {
+        if (isMounted && settings?.ads) {
+          setAdsConfig(settings.ads);
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not fetch advertising settings, maintaining default state:', err);
+      });
 
     return () => {
       isMounted = false;
@@ -46,46 +52,50 @@ export const NetworkAdsLoader: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Clean up any legacy scripts
+    // 1. Remove legacy superseded scripts if present in DOM
     const oldPopunder = document.getElementById(LEGACY_POPUNDER_SCRIPT_ID);
     if (oldPopunder) oldPopunder.remove();
     const oldSocialBar = document.getElementById(LEGACY_SOCIAL_BAR_SCRIPT_ID);
     if (oldSocialBar) oldSocialBar.remove();
 
-    // 1. Manage Popunder Script
+    // 2. Manage Popunder Script (Load once globally)
     const existingPopunder = document.getElementById(POPUNDER_SCRIPT_ID);
     if (adsConfig.popunder) {
-      if (!existingPopunder) {
+      if (!existingPopunder && !hasPopunderInitialized) {
+        hasPopunderInitialized = true;
         const script = document.createElement('script');
         script.id = POPUNDER_SCRIPT_ID;
         script.src = POPUNDER_SCRIPT_URL;
         script.type = 'text/javascript';
         script.async = true;
         script.onerror = (e) => {
-          console.warn('Popunder script load failed or blocked:', e);
+          console.warn('Popunder ad script load failed or was blocked:', e);
         };
         document.body.appendChild(script);
       }
     } else if (existingPopunder) {
       existingPopunder.remove();
+      hasPopunderInitialized = false;
     }
 
-    // 2. Manage Social Bar Script
+    // 3. Manage Social Bar Script (Load once globally, no duplicate floating bar created)
     const existingSocialBar = document.getElementById(SOCIAL_BAR_SCRIPT_ID);
     if (adsConfig.socialBar) {
-      if (!existingSocialBar) {
+      if (!existingSocialBar && !hasSocialBarInitialized) {
+        hasSocialBarInitialized = true;
         const script = document.createElement('script');
         script.id = SOCIAL_BAR_SCRIPT_ID;
         script.src = SOCIAL_BAR_SCRIPT_URL;
         script.type = 'text/javascript';
         script.async = true;
         script.onerror = (e) => {
-          console.warn('Social Bar script load failed or blocked:', e);
+          console.warn('Social Bar ad script load failed or was blocked:', e);
         };
         document.body.appendChild(script);
       }
     } else if (existingSocialBar) {
       existingSocialBar.remove();
+      hasSocialBarInitialized = false;
     }
   }, [adsConfig]);
 

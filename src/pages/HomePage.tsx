@@ -11,7 +11,8 @@ import {
   MessageCircle,
   Phone,
   Lock,
-  Compass
+  Compass,
+  ChevronDown
 } from 'lucide-react';
 import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 import { fetchPublicProfiles, trackTelemetry } from '../lib/api';
@@ -157,16 +158,13 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-white selection:bg-pink-500 selection:text-white">
-      {/* Header Ad Slot */}
-      <AdsterraBanner slotName="header" />
-
       {/* Navigation */}
       <Navbar onSearchClick={() => setSearchModalOpen(true)} />
 
       <main className="flex-1 relative overflow-hidden">
         {/* Ambient Top Glow */}
         <div
-          className="absolute top-0 inset-x-0 h-[600px] pointer-events-none opacity-40 blur-3xl"
+          className="absolute top-0 inset-x-0 h-[600px] pointer-events-none opacity-40 blur-3xl transform-gpu contain-paint isolate"
           style={{
             background: 'radial-gradient(circle at 50% 0%, rgba(244, 63, 94, 0.28) 0%, rgba(15, 23, 42, 0) 75%)',
           }}
@@ -411,92 +409,109 @@ export const HomePage: React.FC = () => {
         {/* ==================================================
             4. DISCOVER PROFILES & CANDIDATE DIRECTORY
             ================================================== */}
-        <section id="discover" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 border-t border-white/10">
-          {/* Section Heading & Filter Header */}
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-white/10">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-2xl sm:text-3xl font-bold font-serif-luxury text-white">
-                  Discover Profiles
-                </h2>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-pink-500/10 border border-pink-500/20 text-pink-400">
-                  {filteredProfiles.length} Available
-                </span>
+        <section id="discover" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-14 border-t border-white/10 relative z-10 isolate bg-slate-950">
+          {/* Dedicated Filter Header Panel with Solid Dark Background preventing GPU Composite Glitch */}
+          <div className="bg-zinc-950 border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl shadow-black/40">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 sm:pb-5 border-b border-white/10">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl sm:text-2xl md:text-3xl font-bold font-serif-luxury text-white">
+                    Discover Profiles
+                  </h2>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-pink-500/10 border border-pink-500/20 text-pink-400">
+                    {filteredProfiles.length} Available
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                  Browse verified candidate portfolios, explore compatibility, and connect directly.
+                </p>
               </div>
-              <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                Browse verified candidate portfolios, explore compatibility, and connect directly.
-              </p>
-            </div>
 
-            {/* Filter Pills in Dark Call Me Theme */}
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => setOnlyFeatured(!onlyFeatured)}
-                className={`px-3 py-1.5 rounded-xl font-medium flex items-center gap-1.5 transition-colors border cursor-pointer ${
-                  onlyFeatured
-                    ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white border-transparent shadow-xs shadow-rose-950/30'
-                    : 'bg-zinc-900 text-slate-300 border-white/10 hover:border-pink-500/30 hover:text-white'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-pink-400" />
-                <span>Featured Spotlights</span>
-              </button>
-
-              {/* Country Select */}
-              <select
-                value={selectedCountry}
-                onChange={(e) => setSelectedCountry(e.target.value)}
-                className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-white/10 text-slate-200 font-medium outline-none hover:border-pink-500/30 focus:border-pink-500/50"
-              >
-                <option value="all">All Locations</option>
-                {countries.filter((c) => c !== 'all').map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-
-              {/* Profession Select */}
-              <select
-                value={selectedProfession}
-                onChange={(e) => setSelectedProfession(e.target.value)}
-                className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-white/10 text-slate-200 font-medium outline-none hover:border-pink-500/30 focus:border-pink-500/50"
-              >
-                <option value="all">All Professions</option>
-                {professions.filter((p) => p !== 'all').map((p) => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
-
-              {/* Status Select */}
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-white/10 text-slate-200 font-medium outline-none hover:border-pink-500/30 focus:border-pink-500/50"
-              >
-                <option value="all">All Marital Statuses</option>
-                <option value="Single">Single</option>
-                <option value="Married">Married</option>
-                <option value="Divorced">Divorced</option>
-                <option value="Widowed">Widowed</option>
-                <option value="Separated">Separated</option>
-                <option value="Never Married">Never Married</option>
-              </select>
-
-              {(searchQuery || selectedCountry !== 'all' || selectedStatus !== 'all' || selectedProfession !== 'all' || onlyFeatured) && (
+              {/* Action Buttons: Featured Spotlight toggle & Reset filter */}
+              <div className="flex items-center gap-2.5 self-start lg:self-auto">
                 <button
                   type="button"
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedCountry('all');
-                    setSelectedStatus('all');
-                    setSelectedProfession('all');
-                    setOnlyFeatured(false);
-                  }}
-                  className="px-2.5 py-1.5 text-xs text-pink-400 hover:text-pink-300 font-semibold cursor-pointer"
+                  onClick={() => setOnlyFeatured(!onlyFeatured)}
+                  className={`h-9 sm:h-10 px-3.5 rounded-xl font-medium text-xs flex items-center gap-1.5 transition-all border cursor-pointer select-none active:scale-95 ${
+                    onlyFeatured
+                      ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white border-transparent shadow-xs shadow-rose-950/30'
+                      : 'bg-zinc-900 text-slate-300 border-white/10 hover:border-pink-500/30 hover:text-white'
+                  }`}
                 >
-                  Reset
+                  <Sparkles className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+                  <span>Featured Spotlights</span>
                 </button>
-              )}
+
+                {(searchQuery || selectedCountry !== 'all' || selectedStatus !== 'all' || selectedProfession !== 'all' || onlyFeatured) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedCountry('all');
+                      setSelectedStatus('all');
+                      setSelectedProfession('all');
+                      setOnlyFeatured(false);
+                    }}
+                    className="h-9 sm:h-10 px-3 rounded-xl bg-zinc-900/80 hover:bg-zinc-900 border border-pink-500/30 text-xs text-pink-400 hover:text-pink-300 font-semibold cursor-pointer transition-colors active:scale-95"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Responsive Filter Dropdowns: Stacks vertically on mobile (360px, 390px, 430px) with full-width controls, 3-col grid on desktop */}
+            <div className="pt-4 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3.5 w-full">
+              {/* Location Filter */}
+              <div className="relative w-full">
+                <select
+                  value={selectedCountry}
+                  onChange={(e) => setSelectedCountry(e.target.value)}
+                  aria-label="Filter by Location"
+                  className="w-full h-11 sm:h-10 pl-3.5 pr-9 py-2 rounded-xl bg-zinc-900 border border-white/10 text-slate-200 text-xs font-medium outline-none appearance-none hover:border-pink-500/30 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/30 transition-colors cursor-pointer truncate"
+                >
+                  <option value="all">All Locations</option>
+                  {countries.filter((c) => c !== 'all').map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+
+              {/* Profession Filter */}
+              <div className="relative w-full">
+                <select
+                  value={selectedProfession}
+                  onChange={(e) => setSelectedProfession(e.target.value)}
+                  aria-label="Filter by Profession"
+                  className="w-full h-11 sm:h-10 pl-3.5 pr-9 py-2 rounded-xl bg-zinc-900 border border-white/10 text-slate-200 text-xs font-medium outline-none appearance-none hover:border-pink-500/30 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/30 transition-colors cursor-pointer truncate"
+                >
+                  <option value="all">All Professions</option>
+                  {professions.filter((p) => p !== 'all').map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+
+              {/* Marital Status Filter */}
+              <div className="relative w-full">
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  aria-label="Filter by Marital Status"
+                  className="w-full h-11 sm:h-10 pl-3.5 pr-9 py-2 rounded-xl bg-zinc-900 border border-white/10 text-slate-200 text-xs font-medium outline-none appearance-none hover:border-pink-500/30 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/30 transition-colors cursor-pointer truncate"
+                >
+                  <option value="all">All Marital Statuses</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Divorced">Divorced</option>
+                  <option value="Widowed">Widowed</option>
+                  <option value="Separated">Separated</option>
+                  <option value="Never Married">Never Married</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
           </div>
 

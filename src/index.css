@@ -6,10 +6,17 @@
     color: #f8fafc;
     background-color: #030712;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   .font-serif-luxury {
     font-family: 'Playfair Display', Georgia, serif;
+  }
+
+  select option {
+    background-color: #18181b;
+    color: #f4f4f5;
   }
 }
 
