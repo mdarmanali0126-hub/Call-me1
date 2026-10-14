@@ -14,7 +14,8 @@ import {
   MessageCircle,
   Quote,
   User,
-  Phone
+  Phone,
+  Video
 } from 'lucide-react';
 import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 import { fetchPublicProfileBySlug, fetchPublicProfiles, recordProfileView, trackTelemetry } from '../lib/api';
@@ -28,6 +29,7 @@ import { MessageChatModal } from '../components/MessageChatModal';
 import { VideoCallModal } from '../components/VideoCallModal';
 import { CallLimitModal } from '../components/CallLimitModal';
 import { AdInterstitialModal } from '../components/AdInterstitialModal';
+import { StoryViewerModal } from '../components/StoryViewerModal';
 import { AdsterraBanner } from '../components/AdsterraBanner';
 import { useCallLimit } from '../hooks/useCallLimit';
 
@@ -50,6 +52,7 @@ export const ProfileDetailPage: React.FC = () => {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isMessageOpen, setIsMessageOpen] = useState(false);
   const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
+  const [isStoryOpen, setIsStoryOpen] = useState(false);
 
   // Initiate call with limit check
   const handleInitiateCall = () => {
@@ -205,6 +208,31 @@ export const ProfileDetailPage: React.FC = () => {
                       </span>
                     )}
                   </div>
+                </div>
+
+                {/* Bottom Overlay Badges: Story on Left & Video Call Ready on Right */}
+                <div className="relative z-10 flex items-center justify-between gap-2 pt-6">
+                  {profile.story?.slides && profile.story.slides.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsStoryOpen(true)}
+                      className="px-3 py-1.5 rounded-full text-xs font-medium bg-black/65 hover:bg-black/85 text-rose-200 hover:text-white border border-rose-400/35 backdrop-blur-md flex items-center gap-1.5 shadow-sm transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                      title="Tap to view her story"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-rose-300 fill-rose-300/30 shrink-0" />
+                      <span>Tap to view her story</span>
+                    </button>
+                  ) : (
+                    <span />
+                  )}
+
+                  <span
+                    className="ml-auto px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white border border-white/20 shadow-md shadow-pink-950/40 flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                    title="Video Call Ready"
+                  >
+                    <Video className="w-3.5 h-3.5 text-white fill-white/20 shrink-0" />
+                    <span className="leading-none">Video Call Ready</span>
+                  </span>
                 </div>
               </div>
 
@@ -438,6 +466,10 @@ export const ProfileDetailPage: React.FC = () => {
                     <div className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-black/60 text-white backdrop-blur-md">
                       {rel.age} yrs
                     </div>
+                    <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white border border-white/20 shadow-md shadow-pink-950/40 flex items-center gap-1 whitespace-nowrap shrink-0">
+                      <Video className="w-2.5 h-2.5 text-white fill-white/20 shrink-0" />
+                      <span>Video Call Ready</span>
+                    </span>
                   </Link>
                   <div className="p-4 space-y-2">
                     <h4 className="font-bold font-serif-luxury text-slate-900 group-hover:text-rose-600 transition-colors">
@@ -497,6 +529,19 @@ export const ProfileDetailPage: React.FC = () => {
           onCallCompleted={() => consumeCall()}
           onOpenContact={() => {
             setIsVideoCallOpen(false);
+            setIsContactOpen(true);
+          }}
+        />
+      )}
+
+      {/* Story Viewer Modal */}
+      {isStoryOpen && profile && (
+        <StoryViewerModal
+          profile={profile}
+          isOpen={isStoryOpen}
+          onClose={() => setIsStoryOpen(false)}
+          onOpenContact={() => {
+            setIsStoryOpen(false);
             setIsContactOpen(true);
           }}
         />

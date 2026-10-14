@@ -27,6 +27,7 @@ import { MessageChatModal } from '../components/MessageChatModal';
 import { VideoCallModal } from '../components/VideoCallModal';
 import { CallLimitModal } from '../components/CallLimitModal';
 import { AdInterstitialModal } from '../components/AdInterstitialModal';
+import { StoryViewerModal } from '../components/StoryViewerModal';
 import { AdsterraBanner } from '../components/AdsterraBanner';
 import { useCallLimit } from '../hooks/useCallLimit';
 
@@ -54,6 +55,7 @@ export const HomePage: React.FC = () => {
   const [shareProfile, setShareProfile] = useState<Profile | null>(null);
   const [messageProfile, setMessageProfile] = useState<Profile | null>(null);
   const [videoCallProfile, setVideoCallProfile] = useState<Profile | null>(null);
+  const [storyProfile, setStoryProfile] = useState<Profile | null>(null);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   // Start call or trigger limit screen
@@ -554,6 +556,7 @@ export const HomePage: React.FC = () => {
                   onOpenContact={(p) => setContactProfile(p)}
                   onOpenMessage={(p) => setMessageProfile(p)}
                   onOpenVideoCall={(p) => handleInitiateCall(p)}
+                  onOpenStory={(p) => setStoryProfile(p)}
                 />
               ))}
             </div>
@@ -745,6 +748,20 @@ export const HomePage: React.FC = () => {
           onCallCompleted={() => consumeCall()}
           onOpenContact={(p) => {
             setVideoCallProfile(null);
+            setContactProfile(p);
+          }}
+        />
+      )}
+
+      {/* Story Viewer Modal */}
+      {storyProfile && (
+        <StoryViewerModal
+          profile={storyProfile}
+          isOpen={!!storyProfile}
+          onClose={() => setStoryProfile(null)}
+          onOpenContact={() => {
+            const p = storyProfile;
+            setStoryProfile(null);
             setContactProfile(p);
           }}
         />
