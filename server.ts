@@ -31,24 +31,32 @@ async function injectOpenGraphTags(html, url) {
   // We can just match /[^/]+ and see if it corresponds to a slug in the DB.
   
   try {
-    // Basic route matching
-    const urlParts = url.split('?')[0].split('/');
-    if (urlParts.length === 2 && urlParts[1] && urlParts[1] !== 'admin' && urlParts[1] !== 'api' && urlParts[1] !== 'assets') {
-      const slug = urlParts[1];
+    // Robust route matching for candidate profiles: matches /profile/:slug, /story/:slug, or direct /:slug
+    const urlParts = url.split('?')[0].split('/').filter(Boolean);
+    let candidateSlug = '';
+
+    if (urlParts.length === 2 && (urlParts[0] === 'profile' || urlParts[0] === 'story')) {
+      candidateSlug = urlParts[1];
+    } else if (urlParts.length === 1 && !['admin', 'api', 'assets', 'settings'].includes(urlParts[0])) {
+      candidateSlug = urlParts[0];
+    }
+
+    if (candidateSlug) {
       const profiles = await fetchLiveProfilesFromFirestore(false);
-      const profile = profiles.find(p => p.slug === slug && p.published !== false);
+      const profile = profiles.find(p => p.slug === candidateSlug && p.published !== false);
       
       if (profile) {
-        title = profile.fullName;
+        title = `${profile.fullName} — Call Me Matrimonial Portfolio`;
         if (profile.profession && profile.city) {
-          description = `${profile.profession} in ${profile.city}. ${profile.bio ? profile.bio.substring(0, 120) + '...' : ''}`;
+          description = `${profile.age} yrs • ${profile.profession} based in ${profile.city}, ${profile.country}. ${profile.proposalMessage || profile.bio || ''}`.trim();
         } else if (profile.bio) {
-          description = profile.bio.substring(0, 150) + '...';
+          description = `${profile.age} yrs • ${profile.bio.substring(0, 160)}...`;
         } else {
-          description = `View ${profile.fullName}'s verified profile.`;
+          description = `Explore ${profile.fullName}'s verified matrimonial portfolio and proposal on Call Me.`;
         }
         image = profile.image && profile.image.trim() !== '' ? profile.image : LOGO_URL;
         ogType = 'profile';
+        ogUrl = `https://call-me1.vercel.app/profile/${profile.slug}`;
       }
     }
   } catch (err) {

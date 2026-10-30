@@ -118,13 +118,29 @@ export const HomePage: React.FC = () => {
     return ['all', ...list.slice(0, 10)];
   }, [profiles]);
 
+  // Helper to match marital status accommodating standard matrimonial synonyms (Single <=> Never Married <=> Unmarried)
+  const matchesMaritalStatus = (candidateStatus: string | undefined, filterStatus: string): boolean => {
+    if (!filterStatus || filterStatus === 'all') return true;
+    if (!candidateStatus) return false;
+    const c = candidateStatus.trim().toLowerCase();
+    const f = filterStatus.trim().toLowerCase();
+
+    const isUnmarriedFilter = f === 'single' || f === 'never married' || f === 'unmarried';
+    const isUnmarriedCandidate = c === 'single' || c === 'never married' || c === 'unmarried';
+    if (isUnmarriedFilter && isUnmarriedCandidate) {
+      return true;
+    }
+
+    return c === f;
+  };
+
   // Filtered list
   const filteredProfiles = useMemo(() => {
     return profiles.filter((p) => {
       if (onlyFeatured && !p.featured) return false;
-      if (selectedCountry !== 'all' && p.country.toLowerCase() !== selectedCountry.toLowerCase()) return false;
-      if (selectedStatus !== 'all' && p.maritalStatus.toLowerCase() !== selectedStatus.toLowerCase()) return false;
-      if (selectedProfession !== 'all' && !p.profession.toLowerCase().includes(selectedProfession.toLowerCase())) return false;
+      if (selectedCountry !== 'all' && p.country && p.country.toLowerCase() !== selectedCountry.toLowerCase()) return false;
+      if (selectedStatus !== 'all' && !matchesMaritalStatus(p.maritalStatus, selectedStatus)) return false;
+      if (selectedProfession !== 'all' && p.profession && !p.profession.toLowerCase().includes(selectedProfession.toLowerCase())) return false;
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();

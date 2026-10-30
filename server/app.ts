@@ -272,7 +272,16 @@ app.get('/api/profiles', async (req, res) => {
     }
 
     if (maritalStatus && typeof maritalStatus === 'string' && maritalStatus !== 'all') {
-      results = results.filter(p => p.maritalStatus && p.maritalStatus.toLowerCase() === maritalStatus.toLowerCase());
+      const f = maritalStatus.trim().toLowerCase();
+      const isUnmarriedFilter = f === 'single' || f === 'never married' || f === 'unmarried';
+      results = results.filter(p => {
+        if (!p.maritalStatus) return false;
+        const c = p.maritalStatus.trim().toLowerCase();
+        if (isUnmarriedFilter && (c === 'single' || c === 'never married' || c === 'unmarried')) {
+          return true;
+        }
+        return c === f;
+      });
     }
 
     if (featured === 'true') {

@@ -45,15 +45,27 @@ export const ShareModal: React.FC<ShareModalProps> = ({ profile, isOpen, onClose
           </p>
 
           {/* Social share options */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <a
               href={`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 transition-colors border border-emerald-200/60"
             >
-              <MessageCircle className="w-6 h-6 text-emerald-600" />
+              <MessageCircle className="w-5 h-5 text-emerald-600" />
               <span className="text-[11px] font-semibold">WhatsApp</span>
+            </a>
+
+            <a
+              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-blue-50 hover:bg-blue-100/80 text-blue-900 transition-colors border border-blue-200/60"
+            >
+              <svg className="w-5 h-5 fill-[#1877F2]" viewBox="0 0 24 24">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              </svg>
+              <span className="text-[11px] font-semibold">Facebook</span>
             </a>
 
             <a
@@ -62,7 +74,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ profile, isOpen, onClose
               rel="noopener noreferrer"
               className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-slate-100 hover:bg-slate-200/80 text-slate-800 transition-colors border border-slate-200"
             >
-              <Twitter className="w-6 h-6 text-slate-900" />
+              <Twitter className="w-5 h-5 text-slate-900" />
               <span className="text-[11px] font-semibold">X (Twitter)</span>
             </a>
 
@@ -70,9 +82,9 @@ export const ShareModal: React.FC<ShareModalProps> = ({ profile, isOpen, onClose
               href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-blue-50 hover:bg-blue-100/80 text-blue-800 transition-colors border border-blue-200/60"
+              className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-sky-50 hover:bg-sky-100/80 text-sky-800 transition-colors border border-sky-200/60"
             >
-              <Linkedin className="w-6 h-6 text-blue-700" />
+              <Linkedin className="w-5 h-5 text-[#0A66C2]" />
               <span className="text-[11px] font-semibold">LinkedIn</span>
             </a>
           </div>

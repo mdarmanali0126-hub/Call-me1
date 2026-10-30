@@ -13,9 +13,21 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-ZT7QE0CRY5');
+      // send_page_view: false prevents duplicate initial pageview since AnalyticsTracker logs pageviews on route mount
+      gtag('config', 'G-ZT7QE0CRY5', { send_page_view: false });
     </script>
-      <title>Call Me - Find Your Perfect Match</title>
+    <title>Call Me - Find Your Perfect Match</title>
+    <meta name="description" content="Discover verified matrimonial candidate portfolios, direct messaging inquiries, and simulated video call previews on Call Me." />
+    <meta property="og:site_name" content="Call Me" />
+    <meta property="og:title" content="Call Me - Find Your Perfect Match" />
+    <meta property="og:description" content="Discover verified matrimonial candidate portfolios, direct messaging inquiries, and simulated video call previews on Call Me." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://call-me1.vercel.app/" />
+    <meta property="og:image" content="https://freepngimg.com/save/70086-logo-whatsapp-computer-viber-icons-free-download-image/1000x1000" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Call Me - Find Your Perfect Match" />
+    <meta name="twitter:description" content="Discover verified matrimonial candidate portfolios, direct messaging inquiries, and simulated video call previews on Call Me." />
+    <meta name="twitter:image" content="https://freepngimg.com/save/70086-logo-whatsapp-computer-viber-icons-free-download-image/1000x1000" />
   </head>
   <body>
     <div id="root"></div>
