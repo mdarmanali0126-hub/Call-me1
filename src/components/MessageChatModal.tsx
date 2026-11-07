@@ -231,19 +231,17 @@ export const MessageChatModal: React.FC<MessageChatModalProps> = ({
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className="relative w-full sm:max-w-md bg-slate-950 text-white rounded-t-3xl sm:rounded-3xl shadow-[0_0_50px_rgba(244,63,94,0.22)] border border-white/10 sm:border-rose-500/25 flex flex-col h-[88vh] sm:h-[620px] max-h-[92vh] overflow-hidden z-10"
           >
-            {/* Header: Reuses Active Stories & Profile Card visual language */}
-            <div className="px-4 py-3.5 bg-black/95 text-white flex items-center justify-between border-b border-white/10 shrink-0">
+            {/* Header */}
+            <div className="px-4 py-3.5 bg-[#070b16] text-white flex items-center justify-between border-b border-amber-200/15 shrink-0">
               <div className="flex items-center gap-3 min-w-0">
-                {/* Profile Avatar with Pink Gradient Ring (Active Stories style) */}
-                <div className="relative shrink-0 p-0.5 rounded-full bg-gradient-to-tr from-rose-500 via-pink-500 to-amber-400">
+                {/* Profile Avatar with Refined Champagne Border */}
+                <div className="relative shrink-0 p-0.5 rounded-full bg-gradient-to-tr from-amber-400 via-amber-200 to-rose-400">
                   <img
                     src={profile.image || DEFAULT_AVATAR_PLACEHOLDER}
                     alt={profile.fullName}
                     referrerPolicy="no-referrer"
-                    className="w-10 h-10 rounded-full object-cover border-2 border-black"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-[#050811]"
                   />
-                  {/* Active Status Dot */}
-                  <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-black" />
                 </div>
 
                 <div className="min-w-0">
@@ -251,15 +249,13 @@ export const MessageChatModal: React.FC<MessageChatModalProps> = ({
                     <h3 className="font-bold text-white text-base font-serif-luxury truncate">
                       {profile.fullName}
                     </h3>
-                    {profile.verified !== false && (
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    )}
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-300">
-                    <span className="text-pink-400 font-semibold">{profile.age} yrs</span>
+                    <span className="text-amber-300 font-semibold">{profile.age} yrs</span>
                     <span className="text-slate-600">•</span>
-                    <span className="text-slate-400 truncate flex items-center gap-1">
-                      <MapPin className="w-2.5 h-2.5 text-rose-400 inline" />
+                    <span className="text-slate-300 truncate flex items-center gap-1">
+                      <MapPin className="w-2.5 h-2.5 text-amber-300 inline" />
                       {profile.city}, {profile.country}
                     </span>
                   </div>

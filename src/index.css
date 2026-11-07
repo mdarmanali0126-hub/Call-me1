@@ -4,19 +4,38 @@
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: #f8fafc;
-    background-color: #030712;
+    background-color: #050811;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
 
   .font-serif-luxury {
-    font-family: 'Playfair Display', Georgia, serif;
+    font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+  }
+
+  .font-cormorant {
+    font-family: 'Cormorant Garamond', Georgia, serif;
   }
 
   select option {
-    background-color: #18181b;
-    color: #f4f4f5;
+    background-color: #0b1120;
+    color: #f1f5f9;
   }
+}
+
+/* Luxury Matchmaking Subtle Radial & Gradient Accent Utilities */
+.bg-radial-luxury {
+  background: radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.08) 0%, rgba(244, 63, 94, 0.04) 35%, rgba(5, 8, 17, 0) 75%);
+}
+
+.champagne-border {
+  border-color: rgba(226, 198, 140, 0.22);
+}
+
+.champagne-gradient-text {
+  background: linear-gradient(135deg, #fbf7ee 0%, #e8d5b5 50%, #c5a467 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 

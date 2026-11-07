@@ -163,7 +163,7 @@ export const ProfileDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+    <div className="min-h-screen bg-[#050811] text-slate-100 flex flex-col selection:bg-amber-500 selection:text-black">
       <Navbar />
 
       <main className="flex-1 pb-16">
@@ -171,39 +171,37 @@ export const ProfileDetailPage: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2">
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-amber-200 transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4 text-amber-300" />
             <span>Back to Candidate Directory</span>
           </Link>
         </div>
 
         {/* Hero Portfolio Section */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl overflow-hidden">
+          <div className="bg-[#090e1a]/95 rounded-3xl border border-amber-200/20 shadow-[0_16px_50px_rgba(0,0,0,0.6)] overflow-hidden">
             <div className="grid grid-cols-1 lg:grid-cols-12">
               {/* Left Column: Image & Media Gallery */}
-              <div className="lg:col-span-5 relative bg-slate-950 min-h-[420px] lg:min-h-[540px] flex flex-col justify-end p-6 overflow-hidden">
+              <div className="lg:col-span-5 relative bg-[#050811] min-h-[420px] lg:min-h-[540px] flex flex-col justify-end p-6 overflow-hidden">
                 <img
                   src={profile.image || DEFAULT_AVATAR_PLACEHOLDER}
                   alt={profile.fullName}
                   referrerPolicy="no-referrer"
-                  className="absolute inset-0 w-full h-full object-cover opacity-90"
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/20" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#090e1a] via-[#090e1a]/30 to-black/20" />
 
                 {/* Top Overlay Badges */}
                 <div className="absolute top-4 inset-x-4 flex items-center justify-between z-10">
                   <div className="flex items-center gap-2">
-                    {profile.verified !== false && (
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/95 text-slate-900 shadow-md backdrop-blur-md flex items-center gap-1.5">
-                        <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                        Verified Profile
-                      </span>
-                    )}
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#050811]/90 text-amber-200 border border-amber-300/30 shadow-md backdrop-blur-md flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Verified Portfolio</span>
+                    </span>
                     {profile.featured && (
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500 text-white shadow-md flex items-center gap-1">
-                        <Sparkles className="w-3.5 h-3.5 fill-white" />
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-200 border border-amber-400/40 shadow-md flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300 fill-amber-300/30" />
                         Featured
                       </span>
                     )}
@@ -216,11 +214,11 @@ export const ProfileDetailPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsStoryOpen(true)}
-                      className="px-3 py-1.5 rounded-full text-xs font-medium bg-black/65 hover:bg-black/85 text-rose-200 hover:text-white border border-rose-400/35 backdrop-blur-md flex items-center gap-1.5 shadow-sm transition-all cursor-pointer whitespace-nowrap active:scale-95"
-                      title="Tap to view her story"
+                      className="px-3.5 py-1.5 rounded-full text-xs font-medium bg-[#050811]/90 hover:bg-black text-amber-200 hover:text-white border border-amber-300/35 backdrop-blur-md flex items-center gap-1.5 shadow-sm transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                      title="View candidate story portfolio"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-rose-300 fill-rose-300/30 shrink-0" />
-                      <span>Tap to view her story</span>
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300 fill-amber-300/30 shrink-0" />
+                      <span>View Story Portfolio</span>
                     </button>
                   ) : (
                     <span />
@@ -240,40 +238,40 @@ export const ProfileDetailPage: React.FC = () => {
               <div className="lg:col-span-7 p-6 sm:p-8 lg:p-10 flex flex-col justify-between space-y-6">
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <span className="text-xs font-bold uppercase tracking-wider text-rose-700 bg-rose-50 px-3 py-1 rounded-lg border border-rose-200">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-amber-300 bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-400/20">
                       {profile.profession}
                     </span>
-                    <span className="text-xs font-semibold text-slate-500">
+                    <span className="text-xs font-medium text-slate-400">
                       ID: {profile.id}
                     </span>
                   </div>
 
                   <div>
-                    <h1 className="text-3xl sm:text-4xl font-bold font-serif-luxury text-slate-900 leading-tight">
+                    <h1 className="text-3xl sm:text-4xl font-bold font-serif-luxury text-white leading-tight">
                       {profile.fullName}
                     </h1>
-                    <p className="text-sm text-slate-600 flex items-center gap-1.5 mt-1">
-                      <MapPin className="w-4 h-4 text-rose-500 shrink-0" />
+                    <p className="text-sm text-slate-300 flex items-center gap-1.5 mt-1">
+                      <MapPin className="w-4 h-4 text-amber-400 shrink-0" />
                       <span>{profile.city}, {profile.state ? `${profile.state}, ` : ''}{profile.country}</span>
                     </p>
                   </div>
 
                   {/* Highlight Stats Grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
-                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                      <span className="text-[11px] font-medium text-slate-600 block">Age &amp; Status</span>
-                      <span className="text-sm font-bold text-slate-900">{profile.age} yrs • {profile.maritalStatus}</span>
+                    <div className="p-3.5 rounded-2xl bg-[#050811]/90 border border-white/5">
+                      <span className="text-[11px] font-medium text-slate-400 block">Age &amp; Status</span>
+                      <span className="text-sm font-bold text-white">{profile.age} yrs • {profile.maritalStatus}</span>
                     </div>
-                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                      <span className="text-[11px] font-medium text-slate-600 block">Education</span>
-                      <span className="text-sm font-bold text-slate-900 truncate block" title={profile.education}>
+                    <div className="p-3.5 rounded-2xl bg-[#050811]/90 border border-white/5">
+                      <span className="text-[11px] font-medium text-slate-400 block">Education</span>
+                      <span className="text-sm font-bold text-white truncate block" title={profile.education}>
                         {profile.education}
                       </span>
                     </div>
                     {profile.religion && (
-                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                        <span className="text-[11px] font-medium text-slate-600 block">Faith / Outlook</span>
-                        <span className="text-sm font-bold text-slate-900 truncate block">{profile.religion}</span>
+                      <div className="p-3.5 rounded-2xl bg-[#050811]/90 border border-white/5">
+                        <span className="text-[11px] font-medium text-slate-400 block">Faith / Values</span>
+                        <span className="text-sm font-bold text-white truncate block">{profile.religion}</span>
                       </div>
                     )}
                   </div>
@@ -281,54 +279,54 @@ export const ProfileDetailPage: React.FC = () => {
                   {/* Personal Bio */}
                   {profile.bio && (
                     <div className="space-y-1.5 pt-2">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">Personal Background</h3>
-                      <p className="text-sm text-slate-700 leading-relaxed">{profile.bio}</p>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Personal Background</h3>
+                      <p className="text-sm text-slate-200 leading-relaxed font-normal">{profile.bio}</p>
                     </div>
                   )}
 
                   {/* Formal Matrimonial Proposal Message */}
                   {profile.proposalMessage && (
-                    <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-rose-50 via-amber-50/40 to-white border border-rose-100 relative space-y-2">
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-rose-700 uppercase tracking-wider">
-                        <Quote className="w-3.5 h-3.5" />
+                    <div className="p-4 sm:p-5 rounded-2xl bg-[#050811] border border-amber-200/15 relative space-y-2">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-amber-200 uppercase tracking-wider">
+                        <Quote className="w-3.5 h-3.5 text-amber-300" />
                         <span>Direct Matrimonial Proposal Statement</span>
                       </div>
-                      <p className="text-xs sm:text-sm text-slate-800 leading-relaxed italic">
+                      <p className="text-xs sm:text-sm text-slate-200 leading-relaxed italic">
                         "{profile.proposalMessage}"
                       </p>
                     </div>
                   )}
                 </div>
 
-                {/* Primary Action Buttons: [ Message ] [ Call Me ] [ Share ] */}
-                <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center gap-3">
+                {/* Primary Action Buttons: [ Inquire Privately ] [ Video Call ] [ Share ] */}
+                <div className="pt-4 border-t border-white/10 flex flex-wrap items-center gap-3">
                   <button
                     type="button"
                     onClick={() => setIsMessageOpen(true)}
-                    className="flex-1 min-w-[140px] py-3.5 px-6 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700/80 hover:border-pink-500/50 hover:shadow-[0_0_20px_rgba(244,63,94,0.22)] font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
-                    title={`Message ${profile.fullName}`}
+                    className="flex-1 min-w-[140px] py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer"
+                    title={`Send inquiry to ${profile.fullName}`}
                   >
-                    <MessageCircle className="w-4 h-4 text-pink-500 fill-pink-500/20" />
-                    <span>Message</span>
+                    <MessageCircle className="w-4 h-4 text-slate-950" />
+                    <span>Inquire Privately</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleInitiateCall}
-                    className="flex-1 min-w-[140px] py-3.5 px-6 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:via-pink-600 hover:to-rose-700 text-white font-bold text-sm shadow-md shadow-rose-600/30 flex items-center justify-center gap-2 transition-all transform active:scale-95 cursor-pointer"
+                    className="flex-1 min-w-[140px] py-3.5 px-6 rounded-2xl bg-[#050811] hover:bg-[#10182b] text-slate-100 hover:text-white border border-amber-200/20 hover:border-amber-300/50 font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
                     title={`Call ${profile.fullName}`}
                   >
-                    <Phone className="w-4 h-4 fill-white text-white" />
+                    <Phone className="w-4 h-4 text-rose-400" />
                     <span>Call Me</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setIsShareOpen(true)}
-                    className="py-3.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm border border-slate-200 flex items-center gap-2 transition-colors cursor-pointer"
+                    className="py-3.5 px-4 rounded-2xl bg-[#050811] hover:bg-[#10182b] text-slate-300 hover:text-white border border-white/10 flex items-center gap-2 transition-colors cursor-pointer"
                     title="Share Profile"
                   >
-                    <Share2 className="w-4 h-4" />
+                    <Share2 className="w-4 h-4 text-amber-300" />
                     <span className="hidden sm:inline">Share</span>
                   </button>
                 </div>
@@ -339,49 +337,49 @@ export const ProfileDetailPage: React.FC = () => {
 
         {/* Detailed Attribute Matrix */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-6">
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
-            <h2 className="text-xl font-bold font-serif-luxury text-slate-900 border-b border-slate-100 pb-3">
+          <div className="bg-[#090e1a]/95 rounded-3xl border border-amber-200/15 p-6 sm:p-8 space-y-6 shadow-xl">
+            <h2 className="text-xl font-bold font-serif-luxury text-white border-b border-white/10 pb-3">
               Candidate Attributes &amp; Preferences
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
               {profile.height && (
-                <div className="space-y-1">
-                  <span className="text-slate-600 font-medium">Height</span>
-                  <p className="font-semibold text-slate-900 text-sm">{profile.height}</p>
+                <div className="p-3 rounded-xl bg-[#050811]/80 border border-white/5 space-y-1">
+                  <span className="text-slate-400 font-medium">Height</span>
+                  <p className="font-semibold text-white text-sm">{profile.height}</p>
                 </div>
               )}
               {profile.motherTongue && (
-                <div className="space-y-1">
-                  <span className="text-slate-600 font-medium">Mother Tongue / Languages</span>
-                  <p className="font-semibold text-slate-900 text-sm">{profile.motherTongue}</p>
+                <div className="p-3 rounded-xl bg-[#050811]/80 border border-white/5 space-y-1">
+                  <span className="text-slate-400 font-medium">Languages</span>
+                  <p className="font-semibold text-white text-sm">{profile.motherTongue}</p>
                 </div>
               )}
               {profile.religion && (
-                <div className="space-y-1">
-                  <span className="text-slate-600 font-medium">Religion &amp; Philosophy</span>
-                  <p className="font-semibold text-slate-900 text-sm">{profile.religion}</p>
+                <div className="p-3 rounded-xl bg-[#050811]/80 border border-white/5 space-y-1">
+                  <span className="text-slate-400 font-medium">Religion &amp; Values</span>
+                  <p className="font-semibold text-white text-sm">{profile.religion}</p>
                 </div>
               )}
               {profile.maritalStatus && (
-                <div className="space-y-1">
-                  <span className="text-slate-600 font-medium">Marital Status</span>
-                  <p className="font-semibold text-slate-900 text-sm">{profile.maritalStatus}</p>
+                <div className="p-3 rounded-xl bg-[#050811]/80 border border-white/5 space-y-1">
+                  <span className="text-slate-400 font-medium">Marital Status</span>
+                  <p className="font-semibold text-white text-sm">{profile.maritalStatus}</p>
                 </div>
               )}
             </div>
 
             {/* Hobbies & Interests */}
             {profile.hobbies && profile.hobbies.length > 0 && (
-              <div className="pt-4 border-t border-slate-100 space-y-2">
-                <span className="text-xs font-bold text-slate-600 uppercase tracking-wider block">
+              <div className="pt-4 border-t border-white/10 space-y-2">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
                   Interests &amp; Passions
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {profile.hobbies.map((hobby, i) => (
                     <span
                       key={i}
-                      className="px-3 py-1 rounded-full text-xs font-medium bg-rose-50 text-rose-800 border border-rose-100"
+                      className="px-3 py-1 rounded-full text-xs font-medium bg-[#050811] text-amber-200 border border-amber-300/20"
                     >
                       {hobby}
                     </span>
@@ -392,15 +390,15 @@ export const ProfileDetailPage: React.FC = () => {
 
             {/* Profile Tags */}
             {profile.tags && profile.tags.length > 0 && (
-              <div className="pt-4 border-t border-slate-100 space-y-2">
-                <span className="text-xs font-bold text-slate-600 uppercase tracking-wider block">
+              <div className="pt-4 border-t border-white/10 space-y-2">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
                   Focus Tags
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {profile.tags.map((tag, i) => (
                     <span
                       key={i}
-                      className="px-3 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700"
+                      className="px-3 py-1 rounded-lg text-xs font-medium bg-[#11192d] text-slate-200 border border-white/5"
                     >
                       #{tag}
                     </span>
@@ -415,13 +413,13 @@ export const ProfileDetailPage: React.FC = () => {
 
           {/* Gallery if present */}
           {profile.gallery && profile.gallery.filter(Boolean).length > 0 && (
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-4">
-              <h3 className="text-xl font-bold font-serif-luxury text-slate-900">
+            <div className="bg-[#090e1a]/95 rounded-3xl border border-amber-200/15 p-6 sm:p-8 space-y-4 shadow-xl">
+              <h3 className="text-xl font-bold font-serif-luxury text-white">
                 Portfolio Gallery
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {profile.gallery.filter(img => Boolean(img && img.trim())).map((imgUrl, i) => (
-                  <div key={i} className="aspect-square rounded-2xl overflow-hidden bg-slate-100">
+                  <div key={i} className="aspect-square rounded-2xl overflow-hidden bg-[#050811] border border-white/10">
                     <img
                       src={imgUrl}
                       alt={`Gallery item ${i + 1}`}
@@ -440,12 +438,12 @@ export const ProfileDetailPage: React.FC = () => {
           <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-2xl font-bold font-serif-luxury text-slate-900">
+                <h3 className="text-2xl font-bold font-serif-luxury text-white">
                   Recommended Matches
                 </h3>
-                <p className="text-xs text-slate-500">Other verified candidates with compatible preferences</p>
+                <p className="text-xs text-slate-400">Other verified candidates with compatible preferences</p>
               </div>
-              <Link to="/" className="text-xs font-bold text-rose-600 hover:text-rose-700">
+              <Link to="/" className="text-xs font-semibold text-amber-300 hover:text-amber-200">
                 View All Directory →
               </Link>
             </div>
@@ -454,16 +452,16 @@ export const ProfileDetailPage: React.FC = () => {
               {relatedProfiles.map((rel) => (
                 <div
                   key={rel.id}
-                  className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-lg transition-all group"
+                  className="bg-[#090e1a]/95 rounded-3xl border border-amber-200/15 overflow-hidden shadow-md hover:shadow-xl transition-all group"
                 >
-                  <Link to={`/profile/${rel.slug}`} className="block relative aspect-[4/3] bg-slate-100">
+                  <Link to={`/profile/${rel.slug}`} className="block relative aspect-[4/3] bg-[#050811]">
                     <img
                       src={rel.image || DEFAULT_AVATAR_PLACEHOLDER}
                       alt={rel.fullName}
                       referrerPolicy="no-referrer"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-black/60 text-white backdrop-blur-md">
+                    <div className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#050811]/80 text-amber-100 border border-white/10 backdrop-blur-md">
                       {rel.age} yrs
                     </div>
                     <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white border border-white/20 shadow-md shadow-pink-950/40 flex items-center gap-1 whitespace-nowrap shrink-0">
@@ -472,15 +470,15 @@ export const ProfileDetailPage: React.FC = () => {
                     </span>
                   </Link>
                   <div className="p-4 space-y-2">
-                    <h4 className="font-bold font-serif-luxury text-slate-900 group-hover:text-rose-600 transition-colors">
+                    <h4 className="font-bold font-serif-luxury text-white group-hover:text-amber-200 transition-colors">
                       {rel.fullName}
                     </h4>
-                    <p className="text-xs text-slate-500 truncate">{rel.profession}</p>
+                    <p className="text-xs text-slate-300 truncate">{rel.profession}</p>
                     <p className="text-[11px] text-slate-400">{rel.city}, {rel.country}</p>
                     <div className="pt-2">
                       <Link
                         to={`/profile/${rel.slug}`}
-                        className="block text-center py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors"
+                        className="block text-center py-2.5 rounded-xl bg-[#050811] hover:bg-[#121c32] text-amber-200 hover:text-white border border-amber-300/20 text-xs font-semibold transition-colors"
                       >
                         View Profile
                       </Link>

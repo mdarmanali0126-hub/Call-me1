@@ -206,15 +206,15 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
                 src={profile.image || DEFAULT_AVATAR_PLACEHOLDER}
                 alt={profile.fullName}
                 referrerPolicy="no-referrer"
-                className="w-9 h-9 rounded-full object-cover border-2 border-rose-500 shadow-xs"
+                className="w-9 h-9 rounded-full object-cover border-2 border-amber-300 shadow-sm"
               />
               <div>
                 <div className="flex items-center gap-1.5">
                   <span className="font-bold text-sm leading-tight text-white">{profile.fullName}</span>
-                  <span className="text-[11px] text-rose-300 font-medium">Story</span>
+                  <span className="text-[11px] text-amber-200 font-medium">Story</span>
                 </div>
                 <p className="text-[11px] text-slate-300 flex items-center gap-1">
-                  <MapPin className="w-2.5 h-2.5 text-rose-400" />
+                  <MapPin className="w-2.5 h-2.5 text-amber-300" />
                   <span>{profile.city}, {profile.country}</span>
                 </p>
               </div>

@@ -54,20 +54,20 @@ export const ContactModal: React.FC<ContactModalProps> = ({ profile, isOpen, onC
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
       <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="p-6 bg-gradient-to-r from-rose-600 via-rose-700 to-amber-700 text-white flex items-start justify-between">
+        <div className="p-6 bg-gradient-to-r from-[#070b16] via-[#0d1424] to-[#16233d] border-b border-amber-200/20 text-white flex items-start justify-between">
           <div className="flex items-center gap-3.5">
             <img
               src={profile.image || DEFAULT_AVATAR_PLACEHOLDER}
               alt={profile.fullName}
               referrerPolicy="no-referrer"
-              className="w-14 h-14 rounded-2xl object-cover border-2 border-white/80 shadow-md"
+              className="w-14 h-14 rounded-2xl object-cover border-2 border-amber-300 shadow-md"
             />
             <div>
               <div className="flex items-center gap-1.5">
-                <h3 className="text-xl font-bold font-serif-luxury">{profile.fullName}</h3>
-                <ShieldCheck className="w-4 h-4 text-emerald-300 fill-emerald-400/20" />
+                <h3 className="text-xl font-bold font-serif-luxury text-white">{profile.fullName}</h3>
+                <ShieldCheck className="w-4 h-4 text-amber-300" />
               </div>
-              <p className="text-xs text-rose-100 mt-0.5">{profile.profession} • {profile.city}, {profile.country}</p>
+              <p className="text-xs text-amber-100/90 mt-0.5">{profile.profession} • {profile.city}, {profile.country}</p>
             </div>
           </div>
           <button

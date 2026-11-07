@@ -45,7 +45,7 @@ export const AdsterraBanner: React.FC<AdsterraBannerProps> = ({ className = '', 
       className={`w-full max-w-full flex flex-col items-center justify-center my-6 sm:my-8 px-3 select-none relative z-10 isolate ${className}`}
       id={`banner-container-${slotName || 'default'}`}
     >
-      <div className="w-full max-w-[340px] flex flex-col items-center bg-zinc-950/90 border border-white/10 rounded-2xl p-2.5 sm:p-3 shadow-lg shadow-black/50">
+      <div className="w-full max-w-[340px] flex flex-col items-center bg-[#070b16]/95 border border-amber-200/15 rounded-2xl p-2.5 sm:p-3 shadow-lg shadow-black/60">
         <span className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold mb-2 text-center select-none">
           Advertisement
         </span>
