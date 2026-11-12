@@ -12,12 +12,15 @@ import {
   Phone,
   Lock,
   Compass,
-  ChevronDown
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 import { fetchPublicProfiles, trackTelemetry } from '../lib/api';
 import { updateSEO } from '../lib/seo';
 import { logEvent } from '../lib/analytics';
+import { useOnlinePresence } from '../lib/presence';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { ProfileCard } from '../components/ProfileCard';
@@ -57,6 +60,48 @@ export const HomePage: React.FC = () => {
   const [videoCallProfile, setVideoCallProfile] = useState<Profile | null>(null);
   const [storyProfile, setStoryProfile] = useState<Profile | null>(null);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+
+  // Real-Time Online Presence Tracking
+  const { checkIsOnline } = useOnlinePresence();
+
+  // Horizontal Reel Drag & Scroll Controls
+  const reelRef = React.useRef<HTMLDivElement | null>(null);
+  const isMouseDownRef = React.useRef(false);
+  const startXRef = React.useRef(0);
+  const scrollLeftRef = React.useRef(0);
+  const hasDraggedRef = React.useRef(false);
+
+  const handleReelScroll = (direction: 'left' | 'right') => {
+    if (reelRef.current) {
+      const scrollAmount = 280;
+      reelRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!reelRef.current) return;
+    isMouseDownRef.current = true;
+    hasDraggedRef.current = false;
+    startXRef.current = e.pageX - reelRef.current.offsetLeft;
+    scrollLeftRef.current = reelRef.current.scrollLeft;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isMouseDownRef.current || !reelRef.current) return;
+    const x = e.pageX - reelRef.current.offsetLeft;
+    const walk = (x - startXRef.current);
+    if (Math.abs(walk) > 6) {
+      hasDraggedRef.current = true;
+      reelRef.current.scrollLeft = scrollLeftRef.current - walk;
+    }
+  };
+
+  const handleMouseUp = () => {
+    isMouseDownRef.current = false;
+  };
 
   // Start call or trigger limit screen
   const handleInitiateCall = (targetProfile: Profile) => {
@@ -265,30 +310,69 @@ export const HomePage: React.FC = () => {
         </section>
 
         {/* ==================================================
-            2. ACTIVE STORIES & DIRECT INQUIRIES
-            (No fabricated online counts or fake presence data)
+            2. ACTIVE STORIES & CANDIDATE REEL
+            - Genuine real-time presence (bright green if active, neutral gray if offline)
+            - Smooth horizontal side-scrolling (overflow-x-auto, touch-action: pan-x, -webkit-overflow-scrolling: touch)
             ================================================== */}
-        <section className="bg-[#070b16] border-b border-white/5 py-6 sm:py-8 relative overflow-hidden">
+        <section className="bg-[#070b16] border-b border-white/5 py-5 sm:py-7 relative">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-4 px-0.5">
+            <div className="flex items-center justify-between mb-3.5 px-0.5">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-300" />
                 <h2 className="text-xs sm:text-sm font-bold tracking-widest text-amber-100 uppercase font-sans">
                   Active Stories &amp; Candidate Reel
                 </h2>
               </div>
-              <span className="text-[11px] text-slate-400 font-medium">
-                Tap to explore candidate story portfolios
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                  Tap candidate to open story or message
+                </span>
+                {/* Desktop navigation chevrons for easy scrolling with mouse */}
+                <div className="hidden sm:flex items-center gap-1.5 ml-2">
+                  <button
+                    type="button"
+                    onClick={() => handleReelScroll('left')}
+                    className="p-1.5 rounded-full bg-white/5 hover:bg-amber-400/20 text-slate-400 hover:text-amber-200 border border-white/10 transition-colors cursor-pointer"
+                    aria-label="Scroll left"
+                    title="Scroll left"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleReelScroll('right')}
+                    className="p-1.5 rounded-full bg-white/5 hover:bg-amber-400/20 text-slate-400 hover:text-amber-200 border border-white/10 transition-colors cursor-pointer"
+                    aria-label="Scroll right"
+                    title="Scroll right"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
 
-            {/* Horizontal Calling Reel: Clean Circular Candidate Portraits */}
-            <div className="-mx-4 px-4 sm:mx-0 sm:px-0 flex items-center gap-4 sm:gap-6 overflow-x-auto pb-3 pt-1 scrollbar-none select-none scroll-smooth">
+            {/* Horizontal Calling Reel: Single horizontal row, non-shrinking circles, responsive swipe */}
+            <div
+              ref={reelRef}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              className="-mx-4 px-4 sm:mx-0 sm:px-0 flex items-center gap-4 sm:gap-6 overflow-x-auto flex-nowrap pb-3 pt-1 scrollbar-none select-none scroll-smooth touch-pan-x overscroll-x-contain webkit-overflow-touch snap-x snap-mandatory cursor-grab active:cursor-grabbing"
+              style={{
+                WebkitOverflowScrolling: 'touch',
+                touchAction: 'pan-x',
+                overscrollBehaviorX: 'contain',
+              }}
+            >
               {/* Item 0: Instant Call Action */}
               {spotlightProfile && (
                 <div
-                  onClick={() => handleInitiateCall(spotlightProfile)}
-                  className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group"
+                  onClick={() => {
+                    if (hasDraggedRef.current) return;
+                    handleInitiateCall(spotlightProfile);
+                  }}
+                  className="flex flex-col items-center gap-1.5 shrink-0 snap-start cursor-pointer group"
                 >
                   <div className="relative p-0.5 rounded-full bg-gradient-to-tr from-amber-400 via-amber-200 to-rose-400 group-hover:scale-105 transition-transform duration-200">
                     <div className="w-16 h-16 sm:w-[68px] sm:h-[68px] rounded-full bg-[#050811] flex flex-col items-center justify-center border-2 border-black text-amber-300 group-hover:text-white transition-colors">
@@ -302,36 +386,59 @@ export const HomePage: React.FC = () => {
                 </div>
               )}
 
-              {/* Profiles in Calling Reel: Click opens Message Chat */}
-              {activeProfiles.map((p) => (
-                <div
-                  key={p.id}
-                  onClick={() => setMessageProfile(p)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
+              {/* Candidate Profiles in Reel */}
+              {activeProfiles.map((p) => {
+                const isOnline = checkIsOnline(p);
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => {
+                      if (hasDraggedRef.current) return;
                       setMessageProfile(p);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Send message inquiry to ${p.fullName}`}
-                  className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group outline-none"
-                >
-                  {/* Circular image with refined champagne border */}
-                  <div className="relative p-0.5 rounded-full bg-gradient-to-tr from-amber-400/80 via-amber-200/60 to-rose-400/80 group-hover:scale-105 group-hover:shadow-[0_0_20px_rgba(212,175,55,0.3)] transition-all duration-200 shadow-md">
-                    <img
-                      src={p.image || DEFAULT_AVATAR_PLACEHOLDER}
-                      alt={p.fullName}
-                      referrerPolicy="no-referrer"
-                      className="w-16 h-16 sm:w-[68px] sm:h-[68px] rounded-full object-cover border-2 border-[#050811]"
-                    />
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setMessageProfile(p);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Send message inquiry to ${p.fullName} (${isOnline ? 'Online' : 'Offline'})`}
+                    className="flex flex-col items-center gap-1.5 shrink-0 snap-start cursor-pointer group outline-none"
+                  >
+                    {/* Circular image with refined champagne border */}
+                    <div className="relative p-0.5 rounded-full bg-gradient-to-tr from-amber-400/80 via-amber-200/60 to-rose-400/80 group-hover:scale-105 group-hover:shadow-[0_0_20px_rgba(212,175,55,0.3)] transition-all duration-200 shadow-md">
+                      <img
+                        src={p.image || DEFAULT_AVATAR_PLACEHOLDER}
+                        alt={p.fullName}
+                        referrerPolicy="no-referrer"
+                        className="w-16 h-16 sm:w-[68px] sm:h-[68px] rounded-full object-cover border-2 border-[#050811]"
+                      />
+
+                      {/* Genuine Real-Time Presence Indicator: Bright Green if Online, Neutral Slate Gray if Offline */}
+                      {isOnline ? (
+                        <span
+                          className="absolute bottom-0 right-0 z-10 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-[#050811] shadow-[0_0_10px_rgba(16,185,129,0.95)] flex items-center justify-center transition-transform"
+                          title={`${p.fullName} is currently active`}
+                          aria-label="Online now"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-100 animate-pulse" />
+                        </span>
+                      ) : (
+                        <span
+                          className="absolute bottom-0.5 right-0.5 z-10 w-3 h-3 rounded-full bg-slate-600/85 ring-2 ring-[#050811]"
+                          title={`${p.fullName} is offline`}
+                          aria-label="Offline"
+                        />
+                      )}
+                    </div>
+                    <span className="text-[11px] font-medium text-slate-300 truncate max-w-[74px] text-center group-hover:text-amber-200 transition-colors mt-0.5">
+                      {p.fullName.split(' ')[0]}
+                    </span>
                   </div>
-                  <span className="text-[11px] font-medium text-slate-300 truncate max-w-[74px] text-center group-hover:text-amber-200 transition-colors mt-0.5">
-                    {p.fullName.split(' ')[0]}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>

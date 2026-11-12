@@ -39,3 +39,27 @@
   -webkit-text-fill-color: transparent;
 }
 
+/* Cross-browser scrollbar hiding without breaking scrolling */
+.scrollbar-none {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important; /* Firefox */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari, Opera */
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Horizontal reel swipe and touch momentum utilities */
+.touch-pan-x {
+  touch-action: pan-x !important;
+}
+
+.overscroll-x-contain {
+  overscroll-behavior-x: contain;
+}
+
+.webkit-overflow-touch {
+  -webkit-overflow-scrolling: touch;
+}
+

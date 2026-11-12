@@ -53,6 +53,8 @@ export interface Profile {
   height?: string;
   motherTongue?: string;
   hobbies?: string[];
+  isOnline?: boolean;
+  lastActiveAt?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, Sparkles, ArrowRight, ShieldCheck, MapPin, Video } from 'lucide-react';
 import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 import { logEvent } from '../lib/analytics';
+import { useOnlinePresence } from '../lib/presence';
 import { VideoCallModal } from './VideoCallModal';
 import { CallLimitModal } from './CallLimitModal';
 import { AdInterstitialModal } from './AdInterstitialModal';
@@ -56,6 +57,10 @@ export const MessageChatModal: React.FC<MessageChatModalProps> = ({
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [userMessageCount, setUserMessageCount] = useState(0);
+
+  // Real-Time Online Presence Tracking
+  const { checkIsOnline } = useOnlinePresence(profile);
+  const isOnline = checkIsOnline(profile);
 
   // Call Limit & Video Call States (Shares same global call-limit counter)
   const { callsUsed, canCall, consumeCall } = useCallLimit();
@@ -242,6 +247,20 @@ export const MessageChatModal: React.FC<MessageChatModalProps> = ({
                     referrerPolicy="no-referrer"
                     className="w-10 h-10 rounded-full object-cover border-2 border-[#050811]"
                   />
+                  {/* Real-Time Presence Indicator */}
+                  {isOnline ? (
+                    <span
+                      className="absolute bottom-0 right-0 z-10 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-[#070b16] shadow-[0_0_8px_rgba(16,185,129,0.95)] flex items-center justify-center"
+                      title="Online now"
+                    >
+                      <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                    </span>
+                  ) : (
+                    <span
+                      className="absolute bottom-0 right-0 z-10 w-2.5 h-2.5 rounded-full bg-slate-600 ring-2 ring-[#070b16]"
+                      title="Offline"
+                    />
+                  )}
                 </div>
 
                 <div className="min-w-0">
@@ -252,6 +271,10 @@ export const MessageChatModal: React.FC<MessageChatModalProps> = ({
                     <ShieldCheck className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-300">
+                    <span className={isOnline ? "text-emerald-400 font-medium" : "text-slate-400"}>
+                      {isOnline ? "Online now" : "Offline"}
+                    </span>
+                    <span className="text-slate-600">•</span>
                     <span className="text-amber-300 font-semibold">{profile.age} yrs</span>
                     <span className="text-slate-600">•</span>
                     <span className="text-slate-300 truncate flex items-center gap-1">

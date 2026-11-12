@@ -398,6 +398,94 @@ app.post('/api/telemetry', (req, res) => {
 });
 
 // -----------------------------------------------------------
+// Real-Time Online Presence Tracking (Server Authoritative)
+// Tracks genuine client heartbeats and profile presence
+// Disconnects on leave or after 60s inactivity without faking
+// -----------------------------------------------------------
+interface PresenceSession {
+  clientId: string;
+  profileId?: string;
+  lastSeen: number;
+}
+
+const activeSessions = new Map<string, PresenceSession>();
+const PRESENCE_TIMEOUT_MS = 60 * 1000; // 60 seconds TTL
+
+// Clean up stale sessions
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, session] of activeSessions.entries()) {
+    if (now - session.lastSeen > PRESENCE_TIMEOUT_MS) {
+      activeSessions.delete(key);
+    }
+  }
+}, 15000);
+
+// POST /api/presence/heartbeat
+app.post('/api/presence/heartbeat', (req, res) => {
+  try {
+    const { clientId, profileId } = req.body || {};
+    if (!clientId || typeof clientId !== 'string') {
+      return res.status(400).json({ success: false, message: 'clientId required' });
+    }
+    const cleanClientId = clientId.slice(0, 100);
+    const cleanProfileId = profileId && typeof profileId === 'string' ? profileId.slice(0, 100) : undefined;
+
+    activeSessions.set(cleanClientId, {
+      clientId: cleanClientId,
+      profileId: cleanProfileId,
+      lastSeen: Date.now()
+    });
+
+    res.json({ success: true, timestamp: Date.now() });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/presence/leave (Beacon or fetch when user navigates away or disconnects)
+app.post('/api/presence/leave', (req, res) => {
+  try {
+    const { clientId } = req.body || {};
+    if (clientId && activeSessions.has(clientId)) {
+      activeSessions.delete(clientId);
+    }
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/presence - Get real-time online presence status
+app.get('/api/presence', (req, res) => {
+  try {
+    const now = Date.now();
+    const onlineProfileIds = new Set<string>();
+    let activeClientCount = 0;
+
+    for (const [clientId, session] of activeSessions.entries()) {
+      if (now - session.lastSeen <= PRESENCE_TIMEOUT_MS) {
+        activeClientCount++;
+        if (session.profileId) {
+          onlineProfileIds.add(session.profileId);
+        }
+      } else {
+        activeSessions.delete(clientId);
+      }
+    }
+
+    res.json({
+      success: true,
+      onlineProfileIds: Array.from(onlineProfileIds),
+      activeCount: activeClientCount,
+      timestamp: now
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// -----------------------------------------------------------
 // Protected Admin Endpoints
 // -----------------------------------------------------------
 

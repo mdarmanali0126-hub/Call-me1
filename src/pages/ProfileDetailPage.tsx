@@ -21,6 +21,7 @@ import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
 import { fetchPublicProfileBySlug, fetchPublicProfiles, recordProfileView, trackTelemetry } from '../lib/api';
 import { updateSEO, injectProfileJsonLd } from '../lib/seo';
 import { logEvent } from '../lib/analytics';
+import { useOnlinePresence } from '../lib/presence';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { ContactModal } from '../components/ContactModal';
@@ -53,6 +54,10 @@ export const ProfileDetailPage: React.FC = () => {
   const [isMessageOpen, setIsMessageOpen] = useState(false);
   const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
   const [isStoryOpen, setIsStoryOpen] = useState(false);
+
+  // Real-Time Online Presence Tracking
+  const { checkIsOnline } = useOnlinePresence(profile);
+  const isOnline = checkIsOnline(profile);
 
   // Initiate call with limit check
   const handleInitiateCall = () => {
@@ -198,6 +203,19 @@ export const ProfileDetailPage: React.FC = () => {
                     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#050811]/90 text-amber-200 border border-amber-300/30 shadow-md backdrop-blur-md flex items-center gap-1.5">
                       <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
                       <span>Verified Portfolio</span>
+                    </span>
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#050811]/90 border border-white/10 shadow-md backdrop-blur-md flex items-center gap-1.5">
+                      {isOnline ? (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
+                          <span className="text-emerald-300">Active Now</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-slate-500" />
+                          <span className="text-slate-400">Offline</span>
+                        </>
+                      )}
                     </span>
                     {profile.featured && (
                       <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-200 border border-amber-400/40 shadow-md flex items-center gap-1">

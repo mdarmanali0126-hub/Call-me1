@@ -54,6 +54,12 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
               <ShieldCheck className="w-3 h-3 text-amber-300/80 shrink-0" />
               <span>Private</span>
             </span>
+            {profile.isOnline && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-medium bg-[#050811]/90 text-emerald-300 border border-emerald-400/30 backdrop-blur-md flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
+                <span>Active</span>
+              </span>
+            )}
           </div>
 
           {/* Right Badge: Age & Marital Status */}

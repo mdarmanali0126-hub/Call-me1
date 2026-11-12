@@ -260,6 +260,18 @@ export const AdminProfileEditPage: React.FC = () => {
                     Spotlight Featured
                   </span>
                 </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={profile.isOnline || false}
+                    onChange={(e) => setProfile({ ...profile, isOnline: e.target.checked })}
+                    className="rounded border-slate-700 text-emerald-500 focus:ring-emerald-500 w-4 h-4"
+                  />
+                  <span className={profile.isOnline ? 'text-emerald-400 font-medium' : 'text-slate-500'}>
+                    {profile.isOnline ? 'Online Presence (Active)' : 'Offline'}
+                  </span>
+                </label>
               </div>
             </div>
 
