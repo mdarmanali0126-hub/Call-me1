@@ -10,10 +10,11 @@ import {
   ArrowRight,
   User,
 } from 'lucide-react';
-import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
+import { Profile, DEFAULT_AVATAR_PLACEHOLDER, isProfileActive } from '../types';
 
 interface ProfileCardProps {
   profile: Profile;
+  isActive?: boolean;
   isOnline?: boolean;
   onOpenContact?: (profile: Profile) => void;
   onOpenMessage?: (profile: Profile) => void;
@@ -23,7 +24,7 @@ interface ProfileCardProps {
 
 export const ProfileCard: React.FC<ProfileCardProps> = ({
   profile,
-  isOnline: isOnlineProp,
+  isActive: isActiveProp,
   onOpenContact,
   onOpenMessage,
   onOpenVideoCall,
@@ -34,7 +35,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
       ? profile.fullName.trim()
       : 'Candidate Portfolio';
 
-  const isOnline = typeof isOnlineProp === 'boolean' ? isOnlineProp : Boolean(profile.isOnline);
+  const isActive = typeof isActiveProp === 'boolean' ? isActiveProp : isProfileActive(profile);
   const hasStory = Boolean(profile.story?.slides && profile.story.slides.length > 0);
 
   return (
@@ -64,7 +65,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         {/* Measured Subtle Contrast Scrim */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#111114]/90 via-transparent to-black/25 pointer-events-none" />
 
-        {/* Top Overlays: Featured / Genuine Online Status */}
+        {/* Top Overlays: Featured / Active Published Profile Status */}
         <div className="absolute top-2 sm:top-3 inset-x-2 sm:inset-x-3 flex items-center justify-between gap-1.5 z-10 pointer-events-none">
           <div className="flex items-center gap-1 min-w-0">
             {profile.featured && (
@@ -73,10 +74,13 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                 <span>Featured</span>
               </span>
             )}
-            {isOnline && (
-              <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-semibold bg-[#09090B]/85 text-[#00D084] border border-[#00D084]/40 backdrop-blur-md flex items-center gap-1 whitespace-nowrap shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#00D084]" />
-                <span>Online</span>
+            {isActive && (
+              <span
+                className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-semibold bg-[#09090B]/85 text-[#00D084] border border-[#00D084]/40 backdrop-blur-md flex items-center gap-1 whitespace-nowrap shrink-0"
+                title="Active published profile"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00D084] shadow-[0_0_6px_rgba(0,208,132,0.75)]" />
+                <span>Active</span>
               </span>
             )}
           </div>

@@ -8,12 +8,12 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
+import { Profile, DEFAULT_AVATAR_PLACEHOLDER, isProfileActive } from '../types';
 
 interface FeaturedHeroCarouselProps {
   profiles: Profile[];
   loading: boolean;
-  checkIsOnline: (profile: Profile) => boolean;
+  checkIsOnline?: (profile: Profile) => boolean;
   onOpenMessage: (profile: Profile) => void;
 }
 
@@ -33,9 +33,9 @@ export const FeaturedHeroCarousel: React.FC<FeaturedHeroCarouselProps> = ({
   );
   const preloadedUrlsRef = useRef<Set<string>>(new Set());
 
-  // Build deduplicated eligible published candidate rotation list (featured first, then other published profiles)
+  // Build deduplicated eligible published & approved candidate rotation list (featured first, then other active published profiles)
   const eligibleProfiles = useMemo<Profile[]>(() => {
-    const published = profiles.filter((p) => p.published && Boolean(p.fullName?.trim()));
+    const published = profiles.filter((p) => isProfileActive(p) && Boolean(p.fullName?.trim()));
     if (published.length === 0) return [];
 
     const withImages = published.filter((p) => Boolean(p.image?.trim()));
@@ -121,7 +121,7 @@ export const FeaturedHeroCarousel: React.FC<FeaturedHeroCarouselProps> = ({
     return null;
   }
 
-  const isOnline = checkIsOnline(currentProfile);
+  const isActive = isProfileActive(currentProfile);
   // Keep pagination dot strip compact on mobile if directory grows large
   const maxVisibleDots = 7;
   const dotIndices =
@@ -181,10 +181,13 @@ export const FeaturedHeroCarousel: React.FC<FeaturedHeroCarouselProps> = ({
               <span>{currentProfile.featured ? 'Featured' : 'Profile Spotlight'}</span>
             </span>
 
-            {isOnline && (
-              <span className="px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold bg-[#09090B]/85 backdrop-blur-md border border-[#00D084]/40 text-[#00D084] inline-flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#00D084]" />
-                <span>Online</span>
+            {isActive && (
+              <span
+                className="px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold bg-[#09090B]/85 backdrop-blur-md border border-[#00D084]/40 text-[#00D084] inline-flex items-center gap-1.5"
+                title="Active published profile"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00D084] shadow-[0_0_6px_rgba(0,208,132,0.75)]" />
+                <span>Active</span>
               </span>
             )}
           </div>

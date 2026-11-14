@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, Sparkles, ArrowRight, ShieldCheck, MapPin, Video } from 'lucide-react';
-import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
+import { Profile, DEFAULT_AVATAR_PLACEHOLDER, isProfileActive } from '../types';
 import { logEvent } from '../lib/analytics';
 import { useOnlinePresence } from '../lib/presence';
 import { VideoCallModal } from './VideoCallModal';
@@ -58,9 +58,9 @@ export const MessageChatModal: React.FC<MessageChatModalProps> = ({
   const [isTyping, setIsTyping] = useState(false);
   const [userMessageCount, setUserMessageCount] = useState(0);
 
-  // Real-Time Online Presence Tracking
-  const { checkIsOnline } = useOnlinePresence(profile);
-  const isOnline = checkIsOnline(profile);
+  // Keep session presence tracking active; display published profile Active state
+  useOnlinePresence(profile);
+  const isActive = isProfileActive(profile);
 
   // Call Limit & Video Call States (Shares same global call-limit counter)
   const { callsUsed, canCall, consumeCall } = useCallLimit();
@@ -247,18 +247,16 @@ export const MessageChatModal: React.FC<MessageChatModalProps> = ({
                     referrerPolicy="no-referrer"
                     className="w-10 h-10 rounded-full object-cover border-2 border-[#050811]"
                   />
-                  {/* Real-Time Presence Indicator */}
-                  {isOnline ? (
+                  {/* Published Profile Active Indicator */}
+                  {isActive ? (
                     <span
-                      className="absolute bottom-0 right-0 z-20 w-3.5 h-3.5 rounded-full bg-[#00D084] ring-2 ring-[#070b16] shadow-[0_0_8px_rgba(0,208,132,0.85)] flex items-center justify-center"
-                      title="Online now"
-                    >
-                      <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
-                    </span>
+                      className="absolute bottom-0 right-0 z-20 w-3.5 h-3.5 rounded-full bg-[#00D084] ring-2 ring-[#070b16] shadow-[0_0_8px_rgba(0,208,132,0.85)]"
+                      title="Active profile"
+                    />
                   ) : (
                     <span
                       className="absolute bottom-0 right-0 z-20 w-2.5 h-2.5 rounded-full bg-[#64748B] ring-2 ring-[#070b16]"
-                      title="Offline"
+                      title="Inactive profile"
                     />
                   )}
                 </div>
@@ -271,8 +269,8 @@ export const MessageChatModal: React.FC<MessageChatModalProps> = ({
                     <ShieldCheck className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-300">
-                    <span className={isOnline ? "text-emerald-400 font-medium" : "text-slate-400"}>
-                      {isOnline ? "Online now" : "Offline"}
+                    <span className={isActive ? "text-[#00D084] font-medium" : "text-slate-400"}>
+                      {isActive ? "Active" : "Inactive"}
                     </span>
                     <span className="text-slate-600">•</span>
                     <span className="text-amber-300 font-semibold">{profile.age} yrs</span>

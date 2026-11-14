@@ -17,7 +17,7 @@ import {
   Phone,
   Video
 } from 'lucide-react';
-import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
+import { Profile, DEFAULT_AVATAR_PLACEHOLDER, isProfileActive } from '../types';
 import { fetchPublicProfileBySlug, fetchPublicProfiles, recordProfileView, trackTelemetry } from '../lib/api';
 import { updateSEO, injectProfileJsonLd } from '../lib/seo';
 import { logEvent } from '../lib/analytics';
@@ -55,9 +55,9 @@ export const ProfileDetailPage: React.FC = () => {
   const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
   const [isStoryOpen, setIsStoryOpen] = useState(false);
 
-  // Real-Time Online Presence Tracking
-  const { checkIsOnline } = useOnlinePresence(profile);
-  const isOnline = checkIsOnline(profile);
+  // Keep session presence lifecycle active; display published profile Active status
+  useOnlinePresence(profile);
+  const isActive = isProfileActive(profile);
 
   // Initiate call with limit check
   const handleInitiateCall = () => {
@@ -204,16 +204,19 @@ export const ProfileDetailPage: React.FC = () => {
                       <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
                       <span>Verified Portfolio</span>
                     </span>
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#050811]/90 border border-white/10 shadow-md backdrop-blur-md flex items-center gap-1.5">
-                      {isOnline ? (
+                    <span
+                      className="px-3 py-1 rounded-full text-xs font-semibold bg-[#050811]/90 border border-white/10 shadow-md backdrop-blur-md flex items-center gap-1.5"
+                      title={isActive ? 'Active published profile' : 'Inactive profile'}
+                    >
+                      {isActive ? (
                         <>
-                          <span className="w-2 h-2 rounded-full bg-[#00D084] animate-pulse shadow-[0_0_8px_rgba(0,208,132,0.85)]" />
-                          <span className="text-[#00D084]">Active Now</span>
+                          <span className="w-2 h-2 rounded-full bg-[#00D084] shadow-[0_0_8px_rgba(0,208,132,0.85)]" />
+                          <span className="text-[#00D084]">Active</span>
                         </>
                       ) : (
                         <>
                           <span className="w-2 h-2 rounded-full bg-[#64748B]" />
-                          <span className="text-slate-400">Offline</span>
+                          <span className="text-slate-400">Inactive</span>
                         </>
                       )}
                     </span>

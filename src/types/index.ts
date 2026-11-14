@@ -108,3 +108,33 @@ export interface AnalyticsSummary {
 }
 
 export const DEFAULT_AVATAR_PLACEHOLDER = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80';
+
+/**
+ * Determines whether a candidate profile is published and approved (Active),
+ * strictly excluding draft, unpublished, suspended, or disabled profiles.
+ * Note: This reflects published profile availability, not real-time user presence.
+ */
+export function isProfileActive(profile?: Profile | null): boolean {
+  if (!profile || profile.published !== true) return false;
+  const extended = profile as Profile & {
+    approved?: boolean;
+    disabled?: boolean;
+    suspended?: boolean;
+    status?: string;
+    moderationStatus?: string;
+  };
+  if (extended.approved === false || extended.disabled === true || extended.suspended === true) {
+    return false;
+  }
+  const normalizedStatus = (extended.moderationStatus || extended.status || '').toLowerCase().trim();
+  if (
+    normalizedStatus &&
+    ['draft', 'unpublished', 'suspended', 'disabled', 'archived', 'rejected', 'inactive'].includes(
+      normalizedStatus
+    )
+  ) {
+    return false;
+  }
+  return true;
+}
+

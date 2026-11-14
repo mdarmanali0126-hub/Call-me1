@@ -22,7 +22,7 @@ import {
   Star,
   RotateCcw,
 } from 'lucide-react';
-import { Profile, DEFAULT_AVATAR_PLACEHOLDER } from '../types';
+import { Profile, DEFAULT_AVATAR_PLACEHOLDER, isProfileActive } from '../types';
 import { fetchPublicProfiles, trackTelemetry } from '../lib/api';
 import { updateSEO } from '../lib/seo';
 import { logEvent } from '../lib/analytics';
@@ -92,25 +92,51 @@ export const HomePage: React.FC = () => {
   // Real-Time Online Presence Tracking
   const { checkIsOnline } = useOnlinePresence();
 
-  // Horizontal Reel Drag Controls (Desktop Mouse Drag + Native Touch Swipe)
+  // Horizontal Reel Drag Controls (Desktop Mouse Drag + Native Touch Swipe + Continuous Auto-Advance)
   const reelRef = useRef<HTMLDivElement | null>(null);
   const isMouseDownRef = useRef(false);
+  const isReelHoveredRef = useRef(false);
+  const reelPauseUntilRef = useRef(0);
   const startXRef = useRef(0);
   const scrollLeftRef = useRef(0);
   const hasDraggedRef = useRef(false);
 
-  const handleReelScroll = (direction: 'left' | 'right') => {
-    if (reelRef.current) {
-      const scrollAmount = 280;
-      reelRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: shouldReduceMotion ? 'auto' : 'smooth',
-      });
+  const pauseReelAutoAdvance = (durationMs = 6500) => {
+    reelPauseUntilRef.current = Date.now() + durationMs;
+  };
+
+  const handleReelScroll = (direction: 'left' | 'right', isAuto = false) => {
+    const el = reelRef.current;
+    if (!el) return;
+    if (!isAuto) {
+      pauseReelAutoAdvance(6500);
+    }
+    const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+    if (maxScroll <= 0) return;
+
+    const behavior: ScrollBehavior = shouldReduceMotion ? 'auto' : 'smooth';
+    const step = isAuto
+      ? 190
+      : Math.max(220, Math.round(el.clientWidth * 0.72));
+
+    if (direction === 'left') {
+      if (el.scrollLeft <= 2) {
+        el.scrollTo({ left: maxScroll, behavior });
+      } else {
+        el.scrollBy({ left: -step, behavior });
+      }
+    } else {
+      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 2) {
+        el.scrollTo({ left: 0, behavior });
+      } else {
+        el.scrollBy({ left: step, behavior });
+      }
     }
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!reelRef.current) return;
+    pauseReelAutoAdvance(6500);
     isMouseDownRef.current = true;
     hasDraggedRef.current = false;
     startXRef.current = e.pageX - reelRef.current.offsetLeft;
@@ -379,10 +405,36 @@ export const HomePage: React.FC = () => {
   const spotlightProfile =
     spotlightList.length > 0 ? spotlightList[spotlightIndex % spotlightList.length] : undefined;
 
-  // Published profiles for circular candidate carousel
+  // All published, valid candidate profiles for circular discovery carousel (never excludes offline users, deduplicated by id/slug)
   const activeProfiles = useMemo(() => {
-    return profiles.filter((p) => p.published);
+    const seen = new Set<string>();
+    return profiles.filter((p) => {
+      if (!p.published || !p.fullName?.trim()) return false;
+      const key = p.id || p.slug;
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }, [profiles]);
+
+  // Gentle, interruptible continuous auto-advance for candidate reel (respects reduced motion, hidden tabs, hover, touch, & clicks)
+  useEffect(() => {
+    if (loading || shouldReduceMotion || activeProfiles.length <= 1) return;
+
+    const timer = window.setInterval(() => {
+      if (
+        document.hidden ||
+        isReelHoveredRef.current ||
+        isMouseDownRef.current ||
+        Date.now() < reelPauseUntilRef.current
+      ) {
+        return;
+      }
+      handleReelScroll('right', true);
+    }, 4500);
+
+    return () => window.clearInterval(timer);
+  }, [loading, shouldReduceMotion, activeProfiles.length]);
 
   const hasActiveFilters =
     Boolean(searchQuery.trim()) ||
@@ -450,7 +502,7 @@ export const HomePage: React.FC = () => {
     { key: 'recent', label: 'Recently Active', icon: <Activity className="w-3.5 h-3.5" /> },
   ];
 
-  const spotlightIsOnline = spotlightProfile ? checkIsOnline(spotlightProfile) : false;
+  const spotlightIsActive = isProfileActive(spotlightProfile);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#050505] text-white selection:bg-[#FF2878] selection:text-white">
@@ -625,16 +677,25 @@ export const HomePage: React.FC = () => {
           {/* ==================================================
               2. CANDIDATE CAROUSEL ("People Worth Discovering")
               ================================================== */}
-          <section id="stories" className="bg-[#08080A] border-b border-[#232329] py-4 sm:py-6 lg:py-7 relative">
+          <section
+            id="stories"
+            aria-label="People Worth Discovering candidate carousel"
+            className="bg-[#08080A] border-b border-[#232329] py-4 sm:py-6 lg:py-7 relative"
+          >
             <div className="max-w-7xl mx-auto px-3 min-[390px]:px-4 sm:px-6 lg:px-8">
               <div className="flex items-center justify-between gap-3 mb-3 sm:mb-4">
                 <div className="min-w-0">
                   <h2 className="text-sm sm:text-base font-bold text-white tracking-tight flex items-center gap-1.5 sm:gap-2">
                     <Sparkles className="w-4 h-4 text-[#FF2878] shrink-0" />
                     <span className="truncate">People Worth Discovering</span>
+                    {!loading && activeProfiles.length > 0 && (
+                      <span className="text-[11px] sm:text-xs font-medium text-[#9A9AA8] tabular-nums shrink-0">
+                        · {activeProfiles.length}
+                      </span>
+                    )}
                   </h2>
                   <p className="text-[11px] sm:text-xs text-[#9A9AA8] mt-0.5 truncate">
-                    Swipe or tap a candidate to view story or profile
+                    Swipe or tap any candidate to view story or full profile
                   </p>
                 </div>
 
@@ -642,31 +703,40 @@ export const HomePage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleReelScroll('left')}
-                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-[#111114] hover:bg-[#19191F] text-[#9A9AA8] hover:text-white border border-[#232329] transition-colors cursor-pointer"
+                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-[#111114] hover:bg-[#19191F] text-[#9A9AA8] hover:text-white border border-[#232329] active:scale-95 transition-all cursor-pointer"
                     aria-label="Scroll candidates left"
-                    title="Scroll left"
+                    title="Previous candidates"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     type="button"
                     onClick={() => handleReelScroll('right')}
-                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-[#111114] hover:bg-[#19191F] text-[#9A9AA8] hover:text-white border border-[#232329] transition-colors cursor-pointer"
+                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-[#111114] hover:bg-[#19191F] text-[#9A9AA8] hover:text-white border border-[#232329] active:scale-95 transition-all cursor-pointer"
                     aria-label="Scroll candidates right"
-                    title="Scroll right"
+                    title="Next candidates"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
-              {/* Smooth Horizontal Swipe Strip — Clean Edge Padding Prevents Clipped First/Last Cards */}
+              {/* Smooth Horizontal Swipe Strip — Displays ALL Published Candidates Continuously */}
               <div
                 ref={reelRef}
+                onMouseEnter={() => {
+                  isReelHoveredRef.current = true;
+                }}
+                onMouseLeave={() => {
+                  isReelHoveredRef.current = false;
+                  handleMouseUp();
+                }}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
+                onTouchStart={() => pauseReelAutoAdvance(7000)}
+                onWheel={() => pauseReelAutoAdvance(6000)}
+                onKeyDown={() => pauseReelAutoAdvance(6000)}
                 className="-mx-3 min-[390px]:-mx-4 sm:mx-0 px-3 min-[390px]:px-4 sm:px-0 scroll-px-3 min-[390px]:scroll-px-4 sm:scroll-px-0 flex items-start gap-3.5 sm:gap-5 overflow-x-auto flex-nowrap pb-1.5 pt-1 scrollbar-none select-none touch-pan-xy overscroll-x-contain webkit-overflow-touch snap-x-proximity cursor-grab active:cursor-grabbing"
               >
                 {/* Quick Video Call Preview Trigger */}
@@ -680,7 +750,7 @@ export const HomePage: React.FC = () => {
                     className="flex flex-col items-center gap-1.5 sm:gap-2 shrink-0 w-[68px] sm:w-[82px] cursor-pointer group snap-align-start outline-none"
                     aria-label="Start instant video call preview"
                   >
-                    <div className="relative p-[2px] rounded-full gradient-pink-purple group-hover:scale-[1.04] transition-transform duration-200 shrink-0">
+                    <div className="relative p-[2px] rounded-full gradient-pink-purple group-hover:scale-[1.04] group-active:scale-[0.97] transition-transform duration-200 shrink-0">
                       <div className="w-[62px] h-[62px] sm:w-[74px] sm:h-[74px] rounded-full bg-[#111114] flex flex-col items-center justify-center border-2 border-[#08080A]">
                         <Phone className="w-4 h-4 text-[#FF2878]" />
                         <span className="text-[8.5px] sm:text-[9px] font-semibold mt-0.5 sm:mt-1 text-white tracking-wider uppercase">
@@ -702,17 +772,17 @@ export const HomePage: React.FC = () => {
                       </div>
                     ))
                   : activeProfiles.map((p) => {
-                      const isOnline = checkIsOnline(p);
+                      const isActive = isProfileActive(p);
                       const hasStory = Boolean(p.story?.slides && p.story.slides.length > 0);
                       return (
                         <button
-                          key={p.id}
+                          key={p.id || p.slug}
                           type="button"
                           onClick={() => handleCarouselCandidateClick(p)}
-                          aria-label={`${p.fullName}${hasStory ? ' — View Story' : ' — View Profile'} (${isOnline ? 'Online' : 'Offline'})`}
+                          aria-label={`${p.fullName}${hasStory ? ' — View Story' : ' — View Profile'} (${isActive ? 'Active' : 'Inactive'})`}
                           className="flex flex-col items-center gap-1.5 sm:gap-2 shrink-0 w-[68px] sm:w-[82px] cursor-pointer group snap-align-start outline-none"
                         >
-                          <div className="relative p-[2px] rounded-full bg-gradient-to-tr from-[#FF2878] via-[#B446C7] to-[#8B5CF6] group-hover:scale-[1.04] transition-transform duration-200 shrink-0">
+                          <div className="relative p-[2px] rounded-full bg-gradient-to-tr from-[#FF2878] via-[#B446C7] to-[#8B5CF6] group-hover:scale-[1.04] group-active:scale-[0.97] transition-transform duration-200 shrink-0">
                             <img
                               src={p.image || DEFAULT_AVATAR_PLACEHOLDER}
                               alt={p.fullName}
@@ -721,16 +791,16 @@ export const HomePage: React.FC = () => {
                               className="w-[62px] h-[62px] sm:w-[74px] sm:h-[74px] rounded-full object-cover object-top border-2 border-[#08080A] bg-[#111114] shrink-0"
                             />
 
-                            {/* Genuine Presence Indicator */}
-                            {isOnline ? (
+                            {/* Published & Approved Active Indicator */}
+                            {isActive ? (
                               <span
-                                className="absolute bottom-0 right-0 z-20 w-3.5 h-3.5 rounded-full bg-[#00D084] ring-2 ring-[#08080A]"
-                                title={`${p.fullName} is online`}
+                                className="absolute bottom-0 right-0 z-20 w-3.5 h-3.5 rounded-full bg-[#00D084] shadow-[0_0_8px_rgba(0,208,132,0.55)] ring-2 ring-[#08080A]"
+                                title={`${p.fullName} · Active`}
                               />
                             ) : (
                               <span
                                 className="absolute bottom-0.5 right-0.5 z-20 w-2.5 h-2.5 rounded-full bg-[#64748B] ring-2 ring-[#08080A]"
-                                title={`${p.fullName} is offline`}
+                                title={`${p.fullName} · Inactive`}
                               />
                             )}
                           </div>
@@ -920,7 +990,7 @@ export const HomePage: React.FC = () => {
                   <ProfileCard
                     key={profile.id}
                     profile={profile}
-                    isOnline={checkIsOnline(profile)}
+                    isActive={isProfileActive(profile)}
                     onOpenContact={(p) => setContactProfile(p)}
                     onOpenMessage={(p) => setMessageProfile(p)}
                     onOpenVideoCall={(p) => handleInitiateCall(p)}
@@ -957,10 +1027,13 @@ export const HomePage: React.FC = () => {
                       <span>Featured Spotlight</span>
                     </div>
 
-                    {spotlightIsOnline && (
-                      <div className="absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#09090B]/85 text-[#00D084] text-[11px] font-semibold border border-[#00D084]/40 backdrop-blur-md">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#00D084]" />
-                        <span>Online</span>
+                    {spotlightIsActive && (
+                      <div
+                        className="absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#09090B]/85 text-[#00D084] text-[11px] font-semibold border border-[#00D084]/40 backdrop-blur-md"
+                        title="Active published profile"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#00D084] shadow-[0_0_6px_rgba(0,208,132,0.75)]" />
+                        <span>Active</span>
                       </div>
                     )}
                   </div>
