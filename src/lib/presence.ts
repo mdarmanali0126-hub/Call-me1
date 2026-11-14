@@ -139,6 +139,28 @@ class PresenceManager {
     }
   }
 
+  public async setProfileOnlineStatus(profileId: string, isOnline: boolean): Promise<boolean> {
+    try {
+      const res = await fetch('/api/presence/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileId, isOnline })
+      });
+      if (res.ok) {
+        if (isOnline) {
+          this.onlineProfiles.add(profileId);
+        } else {
+          this.onlineProfiles.delete(profileId);
+        }
+        this.notify();
+        return true;
+      }
+    } catch {
+      // Quiet fail
+    }
+    return false;
+  }
+
   public isProfileOnline(profileIdOrSlug: string, profileObj?: Profile | null): boolean {
     if (!profileIdOrSlug) return false;
     // Check if directly in real-time presence list
@@ -148,6 +170,7 @@ class PresenceManager {
       if (profileObj.slug && this.onlineProfiles.has(profileObj.slug)) return true;
       // If profile record itself has verified isOnline flag
       if (profileObj.isOnline === true) return true;
+      if ((profileObj as any).status === 'online' || (profileObj as any).presence === 'online') return true;
     }
     return false;
   }
@@ -193,6 +216,7 @@ export function useOnlinePresence(targetProfile?: Profile | null) {
     onlineIds: onlineSet,
     isOnline: targetProfile ? checkIsOnline(targetProfile) : false,
     checkIsOnline,
-    setActiveProfile: (id: string | null) => presenceManager.setActiveProfile(id)
+    setActiveProfile: (id: string | null) => presenceManager.setActiveProfile(id),
+    setProfileOnlineStatus: (profileId: string, isOnline: boolean) => presenceManager.setProfileOnlineStatus(profileId, isOnline)
   };
 }

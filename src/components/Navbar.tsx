@@ -4,128 +4,203 @@ import { Search, ShieldCheck, Sparkles, UserCheck, Menu, X } from 'lucide-react'
 
 interface NavbarProps {
   onSearchClick?: () => void;
+  onMenuClick?: () => void;
+  sidebarLayout?: boolean;
+  searchQuery?: string;
+  onClearSearch?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onSearchClick }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  onSearchClick,
+  onMenuClick,
+  sidebarLayout = false,
+  searchQuery = '',
+  onClearSearch,
+}) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const trimmedQuery = searchQuery.trim();
 
   return (
-    <header className="sticky top-0 z-40 bg-[#050811]/92 backdrop-blur-md border-b border-amber-200/10 shadow-lg shadow-black/40 text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between py-2 min-h-[72px] lg:min-h-[84px]">
-          {/* Logo */}
-          <Link to="/" className="flex items-center group shrink-0" aria-label="Call Me - Luxury Matchmaking">
-            <img 
-              src="https://iili.io/nFUR3HN.png" 
-              alt="Call Me - Find Your Perfect Match"
-              className="w-[140px] sm:w-[180px] lg:w-[220px] h-auto object-contain shrink-0 transition-transform duration-200 group-hover:scale-[1.02]" 
-            />
-          </Link>
+    <header className="sticky top-0 z-30 bg-[#09090B]/95 backdrop-blur-md border-b border-[#232329] text-white">
+      <div
+        className={
+          sidebarLayout
+            ? 'w-full px-3 min-[390px]:px-4 sm:px-6 lg:px-8'
+            : 'max-w-7xl mx-auto px-3 min-[390px]:px-4 sm:px-6 lg:px-8'
+        }
+      >
+        <div className="flex items-center justify-between gap-2 sm:gap-5 h-16">
+          {/* Left Zone: Mobile Hamburger + Compact Logo (<lg) / Directory Label (lg+) */}
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            {sidebarLayout && onMenuClick && (
+              <button
+                type="button"
+                onClick={onMenuClick}
+                className="lg:hidden min-w-[44px] min-h-[44px] w-10 h-10 -ml-1 flex items-center justify-center rounded-xl text-[#A5A5B5] hover:text-white hover:bg-[#141418] border border-[#232329] transition-colors cursor-pointer shrink-0"
+                aria-label="Open navigation drawer"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            )}
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-7">
             <Link
               to="/"
-              className={`text-xs uppercase tracking-widest font-semibold transition-colors ${
-                location.pathname === '/' ? 'text-amber-200 font-bold' : 'text-slate-300 hover:text-white'
-              }`}
+              className={`flex items-center group shrink-0 ${sidebarLayout ? 'lg:hidden' : ''}`}
+              aria-label="Call Me - Discovery Home"
             >
-              Discover
+              <img
+                src="https://iili.io/nFUR3HN.png"
+                alt="Call Me"
+                className="h-6 min-[360px]:h-7 sm:h-8 w-auto object-contain shrink-0 transition-transform duration-200 group-hover:scale-[1.02]"
+              />
             </Link>
 
-            <a
-              href="#featured"
-              onClick={(e) => {
-                if (location.pathname !== '/') {
+            {sidebarLayout && (
+              <p className="hidden lg:block text-xs font-medium text-[#9A9AA8] tracking-wide whitespace-nowrap truncate">
+                Private Member Directory
+              </p>
+            )}
+          </div>
+
+          {/* Center Zone: Standard Nav Links (Detail Pages) OR Refined Search Entry Point (Sidebar Layout) */}
+          {!sidebarLayout ? (
+            <nav className="hidden md:flex items-center gap-7">
+              <Link
+                to="/"
+                className={`text-xs uppercase tracking-widest font-semibold transition-colors whitespace-nowrap shrink-0 ${
+                  location.pathname === '/' ? 'text-white' : 'text-[#9A9AA8] hover:text-white'
+                }`}
+              >
+                Discover
+              </Link>
+
+              <a
+                href="/?filter=featured#spotlight"
+                onClick={(e) => {
                   e.preventDefault();
-                  navigate('/?filter=featured#featured');
-                }
-              }}
-              className="text-xs uppercase tracking-widest font-semibold text-slate-300 hover:text-white transition-colors flex items-center gap-1.5"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300/80" />
-              <span>Spotlight</span>
-            </a>
+                  navigate('/?filter=featured#spotlight');
+                }}
+                className="text-xs uppercase tracking-widest font-semibold text-[#9A9AA8] hover:text-white transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#FF2878]" />
+                <span>Spotlight</span>
+              </a>
 
-            <div className="h-4 w-px bg-white/10" />
+              <span className="h-4 w-px bg-[#232329]" aria-hidden="true" />
 
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-amber-100/90 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-400/25">
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
-              <span>Bespoke Introductions</span>
-            </div>
-          </nav>
+              <span className="flex items-center gap-1.5 text-xs font-medium text-[#9A9AA8] whitespace-nowrap shrink-0">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#8B5CF6]" />
+                <span>Bespoke Introductions</span>
+              </span>
+            </nav>
+          ) : (
+            onSearchClick && (
+              <div className="hidden sm:flex items-center flex-1 max-w-md mx-auto">
+                <div className="relative flex items-center w-full h-10 rounded-xl bg-[#111114] border border-[#232329] hover:border-[#34343E] transition-colors">
+                  <button
+                    type="button"
+                    onClick={onSearchClick}
+                    className="flex-1 h-full flex items-center justify-between gap-3 px-3.5 text-xs text-left cursor-pointer min-w-0"
+                    title="Search candidates (⌘K)"
+                  >
+                    <span className="flex items-center gap-2.5 min-w-0">
+                      <Search className="w-3.5 h-3.5 text-[#FF2878] shrink-0" />
+                      <span className={`truncate ${trimmedQuery ? 'text-white font-medium' : 'text-[#9A9AA8]'}`}>
+                        {trimmedQuery ? trimmedQuery : 'Search by name, city, or profession...'}
+                      </span>
+                    </span>
+                    {!trimmedQuery && (
+                      <kbd className="hidden xl:inline-flex items-center px-1.5 py-0.5 text-[10px] font-sans font-medium text-[#7A7A88] bg-[#09090B] border border-[#232329] rounded shrink-0">
+                        ⌘K
+                      </kbd>
+                    )}
+                  </button>
+                  {trimmedQuery && onClearSearch && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onClearSearch();
+                      }}
+                      className="pr-3 pl-1 h-full text-[#9A9AA8] hover:text-white transition-colors cursor-pointer shrink-0"
+                      aria-label="Clear search query"
+                      title="Clear search"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          )}
 
-          {/* Action buttons */}
-          <div className="hidden sm:flex items-center gap-3">
+          {/* Right Zone: Mobile Search Icon + Compact Private Portal CTA */}
+          <div className="flex items-center gap-1.5 min-[360px]:gap-2 sm:gap-2.5 shrink-0">
             {onSearchClick && (
               <button
                 type="button"
                 onClick={onSearchClick}
-                className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-300 bg-[#0d1424]/90 hover:bg-[#131d33] rounded-xl transition-colors border border-white/10 hover:border-amber-400/30 cursor-pointer"
-                title="Search profiles"
+                className={`${
+                  sidebarLayout ? 'sm:hidden' : 'hidden sm:flex'
+                } min-w-[40px] min-h-[40px] sm:h-10 px-2.5 sm:px-3.5 flex items-center justify-center gap-2 text-xs font-medium text-[#A5A5B5] hover:text-white bg-[#111114] hover:bg-[#17171B] rounded-xl transition-colors border border-[#232329] cursor-pointer shrink-0`}
+                aria-label="Search candidates"
+                title="Search candidates"
               >
-                <Search className="w-3.5 h-3.5 text-amber-300" />
-                <span>Search candidates...</span>
+                <Search className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-[#FF2878]" />
+                <span className={sidebarLayout ? 'sr-only' : 'hidden sm:inline'}>Search Candidates</span>
               </button>
             )}
 
             <Link
               to={isAdminRoute ? '/' : '/admin'}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl transition-all ${
-                isAdminRoute
-                  ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-xs'
-                  : 'bg-[#0d1424] hover:bg-[#131d33] text-slate-300 hover:text-amber-200 border border-white/10 hover:border-amber-400/30'
-              }`}
+              className="h-9 sm:h-10 inline-flex items-center gap-1 sm:gap-1.5 px-2.5 min-[375px]:px-3 sm:px-4 text-[11px] sm:text-xs font-semibold rounded-xl bg-[#141418] hover:bg-[#1C1C22] text-white border border-[#2A2A32] hover:border-[#FF2878]/45 transition-colors whitespace-nowrap shrink-0"
             >
-              <UserCheck className="w-3.5 h-3.5 text-amber-400" />
-              <span>{isAdminRoute ? 'Exit Admin View' : 'Private Portal'}</span>
+              <UserCheck className="w-3.5 h-3.5 text-[#FF2878] shrink-0" />
+              <span>{isAdminRoute ? 'Exit Admin' : 'Private Portal'}</span>
             </Link>
-          </div>
 
-          {/* Mobile menu button */}
-          <div className="flex md:hidden items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-[#0d1424] border border-white/5"
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+            {!sidebarLayout && (
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-[#A5A5B5] hover:text-white hover:bg-[#141418] border border-[#232329] cursor-pointer shrink-0"
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Mobile menu dropdown */}
-        {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-white/10 space-y-3 bg-[#050811]">
+        {/* Standard Mobile dropdown (Detail pages only) */}
+        {!sidebarLayout && mobileMenuOpen && (
+          <div className="md:hidden py-4 border-t border-[#232329] space-y-2 bg-[#09090B]">
             <Link
               to="/"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2.5 rounded-xl text-sm font-medium text-slate-200 hover:bg-[#0d1424]"
+              className="block px-3 py-2.5 rounded-xl text-sm font-medium text-white hover:bg-[#141418]"
             >
-              Browse Profiles
+              Discover Profiles
             </Link>
             <Link
-              to="/?filter=featured"
+              to="/?filter=featured#spotlight"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2.5 rounded-xl text-sm font-medium text-slate-200 hover:bg-[#0d1424]"
+              className="block px-3 py-2.5 rounded-xl text-sm font-medium text-[#9A9AA8] hover:text-white hover:bg-[#141418]"
             >
               Featured Spotlights
             </Link>
-            <div className="pt-2 border-t border-white/10">
-              <Link
-                to="/admin"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold text-amber-300 bg-amber-500/10 border border-amber-500/20"
-              >
-                <UserCheck className="w-4 h-4" />
-                <span>Private Admin Portal</span>
-              </Link>
-            </div>
+            <Link
+              to="/admin"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold text-white bg-[#141418] border border-[#2A2A32]"
+            >
+              <UserCheck className="w-4 h-4 text-[#FF2878]" />
+              <span>Private Portal</span>
+            </Link>
           </div>
         )}
       </div>

@@ -207,12 +207,12 @@ export const ProfileDetailPage: React.FC = () => {
                     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#050811]/90 border border-white/10 shadow-md backdrop-blur-md flex items-center gap-1.5">
                       {isOnline ? (
                         <>
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
-                          <span className="text-emerald-300">Active Now</span>
+                          <span className="w-2 h-2 rounded-full bg-[#00D084] animate-pulse shadow-[0_0_8px_rgba(0,208,132,0.85)]" />
+                          <span className="text-[#00D084]">Active Now</span>
                         </>
                       ) : (
                         <>
-                          <span className="w-2 h-2 rounded-full bg-slate-500" />
+                          <span className="w-2 h-2 rounded-full bg-[#64748B]" />
                           <span className="text-slate-400">Offline</span>
                         </>
                       )}

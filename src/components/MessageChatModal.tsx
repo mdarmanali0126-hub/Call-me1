@@ -250,14 +250,14 @@ export const MessageChatModal: React.FC<MessageChatModalProps> = ({
                   {/* Real-Time Presence Indicator */}
                   {isOnline ? (
                     <span
-                      className="absolute bottom-0 right-0 z-10 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-[#070b16] shadow-[0_0_8px_rgba(16,185,129,0.95)] flex items-center justify-center"
+                      className="absolute bottom-0 right-0 z-20 w-3.5 h-3.5 rounded-full bg-[#00D084] ring-2 ring-[#070b16] shadow-[0_0_8px_rgba(0,208,132,0.85)] flex items-center justify-center"
                       title="Online now"
                     >
                       <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
                     </span>
                   ) : (
                     <span
-                      className="absolute bottom-0 right-0 z-10 w-2.5 h-2.5 rounded-full bg-slate-600 ring-2 ring-[#070b16]"
+                      className="absolute bottom-0 right-0 z-20 w-2.5 h-2.5 rounded-full bg-[#64748B] ring-2 ring-[#070b16]"
                       title="Offline"
                     />
                   )}

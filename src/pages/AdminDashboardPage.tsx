@@ -49,6 +49,7 @@ import {
   invalidateAdvertisingCache,
   refreshServerProfilesCache
 } from '../lib/api';
+import { useOnlinePresence } from '../lib/presence';
 
 export const AdminDashboardPage: React.FC = () => {
   const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
@@ -61,6 +62,9 @@ export const AdminDashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // Real-Time Online Presence Tracking
+  const { checkIsOnline, setProfileOnlineStatus } = useOnlinePresence();
 
   // Search & filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -423,18 +427,40 @@ export const AdminDashboardPage: React.FC = () => {
                         </td>
 
                         <td className="py-3.5 px-4">
-                          <button
-                            type="button"
-                            onClick={() => handleTogglePublish(p)}
-                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-colors ${
-                              p.published
-                                ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/60'
-                                : 'bg-slate-800 text-slate-400 border border-slate-700'
-                            }`}
-                          >
-                            {p.published ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                            <span>{p.published ? 'Published' : 'Draft'}</span>
-                          </button>
+                          <div className="flex flex-col gap-1.5 items-start">
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePublish(p)}
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer ${
+                                p.published
+                                  ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/60'
+                                  : 'bg-slate-800 text-slate-400 border border-slate-700'
+                              }`}
+                            >
+                              {p.published ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                              <span>{p.published ? 'Published' : 'Draft'}</span>
+                            </button>
+
+                            {/* Real-Time Online Presence Toggle */}
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const currentlyOnline = checkIsOnline(p);
+                                await setProfileOnlineStatus(p.id, !currentlyOnline);
+                                setActionSuccess(`${p.fullName} marked ${!currentlyOnline ? 'Online (Active)' : 'Offline'}`);
+                                setTimeout(() => setActionSuccess(null), 3000);
+                              }}
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer ${
+                                checkIsOnline(p)
+                                  ? 'bg-emerald-950 text-[#00D084] border border-emerald-500/50 shadow-[0_0_8px_rgba(0,208,132,0.4)]'
+                                  : 'bg-slate-900 text-slate-400 border border-slate-700'
+                              }`}
+                              title="Toggle real-time candidate online presence"
+                            >
+                              <span className={`w-2 h-2 rounded-full ${checkIsOnline(p) ? 'bg-[#00D084] animate-pulse' : 'bg-slate-500'}`} />
+                              <span>{checkIsOnline(p) ? 'Online' : 'Offline'}</span>
+                            </button>
+                          </div>
                         </td>
 
                         <td className="py-3.5 px-4">

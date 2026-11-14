@@ -456,11 +456,37 @@ app.post('/api/presence/leave', (req, res) => {
   }
 });
 
+// Track verified online profile IDs (e.g. active matrimonial candidates)
+const verifiedOnlineProfiles = new Set<string>(['prof-elena-vance', 'prof-aarav-sharma']);
+
+// POST /api/presence/status - Toggle or set candidate online presence
+app.post('/api/presence/status', (req, res) => {
+  try {
+    const { profileId, isOnline } = req.body || {};
+    if (!profileId || typeof profileId !== 'string') {
+      return res.status(400).json({ success: false, message: 'profileId required' });
+    }
+    if (isOnline) {
+      verifiedOnlineProfiles.add(profileId);
+    } else {
+      verifiedOnlineProfiles.delete(profileId);
+    }
+    // Update profiles cache if present
+    const cached = profilesCache.find(p => p.id === profileId || p.slug === profileId);
+    if (cached) {
+      cached.isOnline = !!isOnline;
+    }
+    res.json({ success: true, profileId, isOnline: !!isOnline, activeList: Array.from(verifiedOnlineProfiles) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // GET /api/presence - Get real-time online presence status
 app.get('/api/presence', (req, res) => {
   try {
     const now = Date.now();
-    const onlineProfileIds = new Set<string>();
+    const onlineProfileIds = new Set<string>(verifiedOnlineProfiles);
     let activeClientCount = 0;
 
     for (const [clientId, session] of activeSessions.entries()) {
@@ -471,6 +497,14 @@ app.get('/api/presence', (req, res) => {
         }
       } else {
         activeSessions.delete(clientId);
+      }
+    }
+
+    // Include profiles with isOnline === true in cached profiles
+    for (const p of profilesCache) {
+      if (p.isOnline === true) {
+        onlineProfileIds.add(p.id);
+        if (p.slug) onlineProfileIds.add(p.slug);
       }
     }
 

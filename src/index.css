@@ -1,13 +1,20 @@
 @import "tailwindcss";
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    background-color: #050505;
+    color: #ffffff;
+  }
+
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    color: #f8fafc;
-    background-color: #050811;
+    color: #ffffff;
+    background-color: #050505;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    overflow-x: hidden;
   }
 
   .font-serif-luxury {
@@ -19,33 +26,46 @@
   }
 
   select option {
-    background-color: #0b1120;
-    color: #f1f5f9;
+    background-color: #111114;
+    color: #ffffff;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  select:focus-visible,
+  input:focus-visible {
+    outline: 2px solid rgba(255, 40, 120, 0.7);
+    outline-offset: 2px;
   }
 }
 
-/* Luxury Matchmaking Subtle Radial & Gradient Accent Utilities */
-.bg-radial-luxury {
-  background: radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.08) 0%, rgba(244, 63, 94, 0.04) 35%, rgba(5, 8, 17, 0) 75%);
+/* Dark Discovery Theme Accents: Subtle burgundy atmospheric depth */
+.bg-discovery-glow {
+  background: radial-gradient(
+    ellipse 80% 55% at 50% -10%,
+    rgba(155, 23, 68, 0.16) 0%,
+    rgba(139, 92, 246, 0.06) 44%,
+    rgba(5, 5, 5, 0) 76%
+  );
 }
 
-.champagne-border {
-  border-color: rgba(226, 198, 140, 0.22);
+.gradient-pink-purple {
+  background: linear-gradient(135deg, #FF2878 0%, #8B5CF6 100%);
 }
 
-.champagne-gradient-text {
-  background: linear-gradient(135deg, #fbf7ee 0%, #e8d5b5 50%, #c5a467 100%);
+.gradient-pink-purple-text {
+  background: linear-gradient(135deg, #FF4D8D 0%, #C084FC 55%, #8B5CF6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 /* Cross-browser scrollbar hiding without breaking scrolling */
 .scrollbar-none {
-  -ms-overflow-style: none !important; /* IE and Edge */
-  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 .scrollbar-none::-webkit-scrollbar {
-  display: none !important; /* Chrome, Safari, Opera */
+  display: none !important;
   width: 0 !important;
   height: 0 !important;
 }
@@ -53,6 +73,14 @@
 /* Horizontal reel swipe and touch momentum utilities */
 .touch-pan-x {
   touch-action: pan-x !important;
+}
+
+.touch-pan-y {
+  touch-action: pan-y !important;
+}
+
+.touch-pan-xy {
+  touch-action: pan-x pan-y;
 }
 
 .overscroll-x-contain {
@@ -63,3 +91,36 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.snap-x-proximity {
+  scroll-snap-type: x proximity;
+}
+
+.snap-align-start {
+  scroll-snap-align: start;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
