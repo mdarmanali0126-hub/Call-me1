@@ -9,6 +9,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { Profile, DEFAULT_AVATAR_PLACEHOLDER, isProfileActive } from '../types';
+import { logCarouselInteraction } from '../lib/analytics';
 
 interface FeaturedHeroCarouselProps {
   profiles: Profile[];
@@ -103,12 +104,24 @@ export const FeaturedHeroCarousel: React.FC<FeaturedHeroCarouselProps> = ({
 
   const handlePrev = () => {
     if (totalCount <= 1) return;
-    setCurrentIndex((prev) => (prev - 1 + totalCount) % totalCount);
+    const prevIdx = (safeIndex - 1 + totalCount) % totalCount;
+    logCarouselInteraction({
+      carouselName: 'featured_hero',
+      action: 'previous',
+      targetSlug: eligibleProfiles[prevIdx]?.slug,
+    });
+    setCurrentIndex(prevIdx);
   };
 
   const handleNext = () => {
     if (totalCount <= 1) return;
-    setCurrentIndex((prev) => (prev + 1) % totalCount);
+    const nextIdx = (safeIndex + 1) % totalCount;
+    logCarouselInteraction({
+      carouselName: 'featured_hero',
+      action: 'next',
+      targetSlug: eligibleProfiles[nextIdx]?.slug,
+    });
+    setCurrentIndex(nextIdx);
   };
 
   if (loading && !currentProfile) {
@@ -152,6 +165,13 @@ export const FeaturedHeroCarousel: React.FC<FeaturedHeroCarouselProps> = ({
         {/* Synchronized Portrait Frame (Fixed Aspect Ratio prevents layout jumps) */}
         <Link
           to={`/profile/${currentProfile.slug}`}
+          onClick={() =>
+            logCarouselInteraction({
+              carouselName: 'featured_hero',
+              action: 'candidate_select',
+              targetSlug: currentProfile.slug,
+            })
+          }
           className="block relative aspect-[16/15] sm:aspect-[4/5] w-full overflow-hidden bg-[#08080A]"
           aria-label={`View candidate profile for ${currentProfile.fullName}`}
         >
@@ -228,6 +248,13 @@ export const FeaturedHeroCarousel: React.FC<FeaturedHeroCarouselProps> = ({
             </button>
             <Link
               to={`/profile/${currentProfile.slug}`}
+              onClick={() =>
+                logCarouselInteraction({
+                  carouselName: 'featured_hero',
+                  action: 'candidate_select',
+                  targetSlug: currentProfile.slug,
+                })
+              }
               className="h-10 sm:h-9 px-3.5 rounded-xl gradient-pink-purple hover:opacity-95 text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-opacity whitespace-nowrap"
             >
               <span>View Profile</span>
@@ -271,7 +298,14 @@ export const FeaturedHeroCarousel: React.FC<FeaturedHeroCarouselProps> = ({
                     role="tab"
                     aria-selected={active}
                     aria-label={`Show ${dotCandidate?.fullName || `candidate ${idx + 1}`}`}
-                    onClick={() => setCurrentIndex(idx)}
+                    onClick={() => {
+                      logCarouselInteraction({
+                        carouselName: 'featured_hero',
+                        action: 'dot_select',
+                        targetSlug: dotCandidate?.slug,
+                      });
+                      setCurrentIndex(idx);
+                    }}
                     className="py-1.5 px-0.5 flex items-center justify-center cursor-pointer"
                   >
                     <span

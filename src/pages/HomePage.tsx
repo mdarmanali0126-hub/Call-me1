@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import {
   Search,
@@ -25,7 +25,16 @@ import {
 import { Profile, DEFAULT_AVATAR_PLACEHOLDER, isProfileActive } from '../types';
 import { fetchPublicProfiles, trackTelemetry } from '../lib/api';
 import { updateSEO } from '../lib/seo';
-import { logEvent } from '../lib/analytics';
+import {
+  logEvent,
+  logSearch,
+  logFilterUsed,
+  logCarouselInteraction,
+  logCallStarted,
+  SearchSource,
+  MessageSource,
+  CallSource,
+} from '../lib/analytics';
 import { useOnlinePresence } from '../lib/presence';
 import { Sidebar, DiscoveryCategoryKey } from '../components/Sidebar';
 import { Navbar } from '../components/Navbar';
@@ -41,10 +50,12 @@ import { AdInterstitialModal } from '../components/AdInterstitialModal';
 import { StoryViewerModal } from '../components/StoryViewerModal';
 import { AdsterraBanner } from '../components/AdsterraBanner';
 import { useCallLimit } from '../hooks/useCallLimit';
+import { useRecentlyViewed } from '../hooks/useRecentlyViewed';
 
 export const HomePage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const shouldReduceMotion = useReducedMotion();
 
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -73,15 +84,32 @@ export const HomePage: React.FC = () => {
 
   // Spotlight carousel index
   const [spotlightIndex, setSpotlightIndex] = useState(0);
+  const [showAllRecentlyViewed, setShowAllRecentlyViewed] = useState(false);
+
+  // Recently Viewed profiles resolved against live published profiles (up to 10, newest first)
+  const recentlyViewedProfiles = useRecentlyViewed(profiles, !loading, 10);
+  const visibleRecentlyViewed = useMemo(
+    () => (showAllRecentlyViewed ? recentlyViewedProfiles : recentlyViewedProfiles.slice(0, 4)),
+    [recentlyViewedProfiles, showAllRecentlyViewed]
+  );
 
   // Modals
   const [contactProfile, setContactProfile] = useState<Profile | null>(null);
   const [shareProfile, setShareProfile] = useState<Profile | null>(null);
   const [messageProfile, setMessageProfile] = useState<Profile | null>(null);
+  const [messageSource, setMessageSource] = useState<MessageSource>('candidate_card');
   const [videoCallProfile, setVideoCallProfile] = useState<Profile | null>(null);
   const [storyProfile, setStoryProfile] = useState<Profile | null>(null);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [legalModalTab, setLegalModalTab] = useState<'privacy' | 'terms' | 'contact' | null>(null);
+
+  // Analytics helpers state refs
+  const searchSourceRef = useRef<SearchSource>('hero');
+  const lastLoggedSearchRef = useRef<string>('');
+  const pendingFilterLogRef = useRef<{
+    filterType: 'category' | 'location' | 'profession' | 'marital_status' | 'reset';
+    filterValue: string;
+  } | null>(null);
 
   // Filter select refs for category jump focus
   const countrySelectRef = useRef<HTMLSelectElement | null>(null);
@@ -110,6 +138,10 @@ export const HomePage: React.FC = () => {
     if (!el) return;
     if (!isAuto) {
       pauseReelAutoAdvance(6500);
+      logCarouselInteraction({
+        carouselName: 'people_worth_discovering',
+        action: direction === 'left' ? 'previous' : 'next',
+      });
     }
     const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
     if (maxScroll <= 0) return;
@@ -222,8 +254,13 @@ export const HomePage: React.FC = () => {
     return () => observer.disconnect();
   }, [loading]);
 
-  // Start call or trigger limit screen
-  const handleInitiateCall = (targetProfile: Profile) => {
+  // Start call or trigger limit screen + unified call_started tracking
+  const handleInitiateCall = (targetProfile: Profile, source: CallSource = 'candidate_card') => {
+    logCallStarted({
+      profileSlug: targetProfile.slug,
+      source,
+      limitBlocked: !canCall,
+    });
     if (!canCall) {
       setPendingVideoCallProfile(targetProfile);
       setIsLimitModalOpen(true);
@@ -262,7 +299,8 @@ export const HomePage: React.FC = () => {
 
   // Scroll cleanly to section when arriving via URL hash (#discover, #spotlight, #stories)
   useEffect(() => {
-    const hash = window.location.hash?.replace('#', '');
+    const rawHash = location.hash || window.location.hash || '';
+    const hash = rawHash.replace('#', '');
     if (hash && (hash === 'discover' || hash === 'spotlight' || hash === 'stories')) {
       const timer = setTimeout(() => {
         const el = document.getElementById(hash);
@@ -270,7 +308,7 @@ export const HomePage: React.FC = () => {
       }, 250);
       return () => clearTimeout(timer);
     }
-  }, [loading, shouldReduceMotion]);
+  }, [loading, shouldReduceMotion, location.hash]);
 
   const loadProfiles = async () => {
     setLoading(true);
@@ -444,7 +482,45 @@ export const HomePage: React.FC = () => {
     onlyFeatured ||
     activeCategory !== 'all';
 
-  const resetAllFilters = () => {
+  // Debounced live search GA4 tracking (~800ms, prevents firing per keystroke or duplicate consecutive submits)
+  useEffect(() => {
+    if (loading) return;
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      lastLoggedSearchRef.current = '';
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      if (lastLoggedSearchRef.current !== trimmed) {
+        lastLoggedSearchRef.current = trimmed;
+        logSearch({
+          searchTerm: trimmed,
+          searchSource: searchSourceRef.current,
+          resultsCount: filteredProfiles.length,
+        });
+      }
+    }, 800);
+
+    return () => window.clearTimeout(timer);
+  }, [searchQuery, loading, filteredProfiles.length]);
+
+  // Flush filter_used GA4 tracking with exact post-filter results_count
+  useEffect(() => {
+    const pending = pendingFilterLogRef.current;
+    if (!pending) return;
+    pendingFilterLogRef.current = null;
+    logFilterUsed({
+      filterType: pending.filterType,
+      filterValue: pending.filterValue,
+      resultsCount: filteredProfiles.length,
+    });
+  }, [filteredProfiles.length, activeCategory, selectedCountry, selectedProfession, selectedStatus, onlyFeatured]);
+
+  const resetAllFilters = (trackReset = false) => {
+    if (trackReset) {
+      pendingFilterLogRef.current = { filterType: 'reset', filterValue: 'all' };
+    }
     setSearchQuery('');
     setSelectedCountry('all');
     setSelectedStatus('all');
@@ -464,12 +540,13 @@ export const HomePage: React.FC = () => {
     setActiveCategory(cat);
     setActiveNav('discover');
     if (cat === 'all') {
-      resetAllFilters();
+      resetAllFilters(false);
     } else if (cat === 'featured') {
       setOnlyFeatured(true);
     } else {
       setOnlyFeatured(false);
     }
+    pendingFilterLogRef.current = { filterType: 'category', filterValue: cat };
 
     scrollToSection('discover');
 
@@ -484,6 +561,11 @@ export const HomePage: React.FC = () => {
 
   const handleCarouselCandidateClick = (p: Profile) => {
     if (hasDraggedRef.current) return;
+    logCarouselInteraction({
+      carouselName: 'people_worth_discovering',
+      action: 'candidate_select',
+      targetSlug: p.slug,
+    });
     if (p.story?.slides && p.story.slides.length > 0) {
       logEvent('story_open', 'Carousel', p.slug);
       trackTelemetry({ type: 'story_open', profileSlug: p.slug, timestamp: new Date().toISOString() });
@@ -556,41 +638,41 @@ export const HomePage: React.FC = () => {
               ================================================== */}
           <section
             id="top"
-            className="relative pt-5 pb-7 sm:pt-10 sm:pb-12 lg:pt-14 lg:pb-16 border-b border-[#232329]"
+            className="relative pt-2 pb-3.5 sm:pt-10 sm:pb-12 lg:pt-14 lg:pb-16 border-b border-[#232329]"
           >
             <div className="max-w-7xl mx-auto px-3 min-[390px]:px-4 sm:px-6 lg:px-8 relative z-10">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 lg:gap-12 items-center">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-8 lg:gap-12 items-center">
                 {/* Left Column: Brand Eyebrow -> Heading -> Short Copy -> Side-by-Side CTAs -> Search */}
                 <motion.div
                   initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35 }}
-                  className="lg:col-span-7 space-y-3.5 sm:space-y-5 lg:space-y-6 text-center lg:text-left"
+                  className="lg:col-span-7 space-y-1.5 sm:space-y-5 lg:space-y-6 text-center lg:text-left"
                 >
-                  <p className="text-[11px] sm:text-xs font-medium tracking-[0.08em] uppercase text-[#9A9AA8]">
+                  <p className="text-[10px] sm:text-xs font-medium tracking-[0.08em] uppercase text-[#9A9AA8] leading-tight">
                     Call Me · Private Introductions
                   </p>
 
-                  <h1 className="text-[clamp(1.75rem,6.6vw,3.25rem)] font-bold tracking-[-0.025em] text-white leading-[1.08] text-balance">
+                  <h1 className="text-[clamp(1.45rem,5.8vw,3.25rem)] sm:text-[clamp(2rem,4.5vw,3.25rem)] font-bold tracking-[-0.025em] text-white leading-[1.05] sm:leading-[1.08] text-balance">
                     Discover Your
                     <span className="gradient-pink-purple-text block">
                       Perfect Introduction
                     </span>
                   </h1>
 
-                  <p className="text-[13.5px] sm:text-base text-[#A5A5B5] max-w-xl mx-auto lg:mx-0 leading-[1.55] sm:leading-[1.65] line-clamp-3 sm:line-clamp-none">
+                  <p className="text-xs sm:text-base text-[#A5A5B5] max-w-[330px] sm:max-w-xl mx-auto lg:mx-0 leading-[1.38] sm:leading-[1.65]">
                     Explore curated candidate portfolios, start private conversations, and meet someone extraordinary.
                   </p>
 
                   {/* Mobile Side-by-Side Equal-Height CTAs */}
-                  <div className="grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:items-center sm:justify-center lg:justify-start sm:gap-3 pt-0.5">
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-center lg:justify-start sm:gap-3">
                     <button
                       type="button"
                       onClick={() => {
                         setActiveNav('discover');
                         scrollToSection('discover');
                       }}
-                      className="min-h-[44px] h-[44px] px-3 sm:px-6 rounded-xl gradient-pink-purple hover:opacity-95 text-white font-semibold text-xs sm:text-sm inline-flex items-center justify-center gap-1.5 sm:gap-2 active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
+                      className="min-h-[40px] h-10 sm:min-h-[44px] sm:h-[44px] px-3 sm:px-6 rounded-xl gradient-pink-purple hover:opacity-95 text-white font-semibold text-xs sm:text-sm inline-flex items-center justify-center gap-1.5 sm:gap-2 active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
                     >
                       <span>Explore Profiles</span>
                       <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
@@ -602,7 +684,7 @@ export const HomePage: React.FC = () => {
                         setActiveNav('spotlight');
                         scrollToSection('spotlight');
                       }}
-                      className="min-h-[44px] h-[44px] px-3 sm:px-6 rounded-xl bg-[#111114] hover:bg-[#19191F] text-white border border-[#232329] hover:border-[#34343E] font-semibold text-xs sm:text-sm inline-flex items-center justify-center gap-1.5 sm:gap-2 active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
+                      className="min-h-[40px] h-10 sm:min-h-[44px] sm:h-[44px] px-3 sm:px-6 rounded-xl bg-[#111114] hover:bg-[#19191F] text-white border border-[#232329] hover:border-[#34343E] font-semibold text-xs sm:text-sm inline-flex items-center justify-center gap-1.5 sm:gap-2 active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
                     >
                       <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#FF2878] shrink-0" />
                       <span className="sm:hidden">Spotlight</span>
@@ -611,29 +693,38 @@ export const HomePage: React.FC = () => {
                   </div>
 
                   {/* Unified Compact Mobile-Friendly Search Bar */}
-                  <div className="pt-0.5 max-w-xl mx-auto lg:mx-0 w-full">
+                  <div className="max-w-xl mx-auto lg:mx-0 w-full">
                     <form
                       onSubmit={(e) => {
                         e.preventDefault();
-                        if (searchQuery.trim()) {
-                          logEvent('search', 'Hero', searchQuery);
+                        const trimmed = searchQuery.trim();
+                        if (trimmed && lastLoggedSearchRef.current !== trimmed) {
+                          lastLoggedSearchRef.current = trimmed;
+                          logSearch({
+                            searchTerm: trimmed,
+                            searchSource: 'hero',
+                            resultsCount: filteredProfiles.length,
+                          });
                         }
                         setActiveNav('discover');
                         scrollToSection('discover');
                       }}
-                      className="relative flex items-center w-full min-w-0 min-h-[44px] h-11 sm:h-12 bg-[#111114] rounded-xl border border-[#232329] focus-within:border-[#FF2878]/60 focus-within:ring-2 focus-within:ring-[#FF2878]/15 pl-3 sm:pl-3.5 pr-1.5 transition-all"
+                      className="relative flex items-center w-full min-w-0 min-h-[40px] h-10 sm:min-h-[44px] sm:h-12 bg-[#111114] rounded-xl border border-[#232329] focus-within:border-[#FF2878]/60 focus-within:ring-2 focus-within:ring-[#FF2878]/15 pl-3 sm:pl-3.5 pr-1 sm:pr-1.5 transition-all"
                     >
                       <Search className="w-4 h-4 text-[#FF2878] shrink-0" />
                       <input
                         type="text"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                          searchSourceRef.current = 'hero';
+                          setSearchQuery(e.target.value);
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === 'Escape') setSearchQuery('');
                         }}
                         placeholder="Search name, city, or profession..."
                         aria-label="Search candidate profiles"
-                        className="flex-1 min-w-0 px-2.5 sm:px-3 py-2 text-xs sm:text-sm text-white placeholder:text-[#7A7A88] bg-transparent outline-none truncate"
+                        className="flex-1 min-w-0 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-white placeholder:text-[#7A7A88] bg-transparent outline-none truncate"
                       />
                       {searchQuery && (
                         <button
@@ -667,7 +758,10 @@ export const HomePage: React.FC = () => {
                     profiles={profiles}
                     loading={loading}
                     checkIsOnline={checkIsOnline}
-                    onOpenMessage={(p) => setMessageProfile(p)}
+                    onOpenMessage={(p) => {
+                      setMessageSource('hero');
+                      setMessageProfile(p);
+                    }}
                   />
                 </motion.div>
               </div>
@@ -745,7 +839,12 @@ export const HomePage: React.FC = () => {
                     type="button"
                     onClick={() => {
                       if (hasDraggedRef.current) return;
-                      handleInitiateCall(spotlightProfile);
+                      logCarouselInteraction({
+                        carouselName: 'people_worth_discovering',
+                        action: 'candidate_select',
+                        targetSlug: spotlightProfile.slug,
+                      });
+                      handleInitiateCall(spotlightProfile, 'carousel');
                     }}
                     className="flex flex-col items-center gap-1.5 sm:gap-2 shrink-0 w-[68px] sm:w-[82px] cursor-pointer group snap-align-start outline-none"
                     aria-label="Start instant video call preview"
@@ -868,7 +967,11 @@ export const HomePage: React.FC = () => {
                   <select
                     ref={countrySelectRef}
                     value={selectedCountry}
-                    onChange={(e) => setSelectedCountry(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      pendingFilterLogRef.current = { filterType: 'location', filterValue: val };
+                      setSelectedCountry(val);
+                    }}
                     aria-label="Filter by Location"
                     className={`w-full h-11 pl-3.5 pr-9 rounded-xl bg-[#08080A] border text-white text-xs font-medium outline-none appearance-none transition-colors cursor-pointer truncate ${
                       activeCategory === 'location' || selectedCountry !== 'all'
@@ -893,7 +996,11 @@ export const HomePage: React.FC = () => {
                   <select
                     ref={professionSelectRef}
                     value={selectedProfession}
-                    onChange={(e) => setSelectedProfession(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      pendingFilterLogRef.current = { filterType: 'profession', filterValue: val };
+                      setSelectedProfession(val);
+                    }}
                     aria-label="Filter by Profession"
                     className={`w-full h-11 pl-3.5 pr-9 rounded-xl bg-[#08080A] border text-white text-xs font-medium outline-none appearance-none transition-colors cursor-pointer truncate ${
                       activeCategory === 'profession' || selectedProfession !== 'all'
@@ -918,7 +1025,11 @@ export const HomePage: React.FC = () => {
                   <select
                     ref={statusSelectRef}
                     value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      pendingFilterLogRef.current = { filterType: 'marital_status', filterValue: val };
+                      setSelectedStatus(val);
+                    }}
                     aria-label="Filter by Marital Status"
                     className={`w-full h-11 pl-3.5 pr-9 rounded-xl bg-[#08080A] border text-white text-xs font-medium outline-none appearance-none transition-colors cursor-pointer truncate ${
                       activeCategory === 'marital' || selectedStatus !== 'all'
@@ -948,7 +1059,7 @@ export const HomePage: React.FC = () => {
                   </span>
                   <button
                     type="button"
-                    onClick={resetAllFilters}
+                    onClick={() => resetAllFilters(true)}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#08080A] hover:bg-[#19191F] border border-[#232329] text-white font-medium cursor-pointer transition-colors"
                   >
                     <RotateCcw className="w-3.5 h-3.5 text-[#FF2878]" />
@@ -978,7 +1089,7 @@ export const HomePage: React.FC = () => {
                 </p>
                 <button
                   type="button"
-                  onClick={resetAllFilters}
+                  onClick={() => resetAllFilters(true)}
                   className="px-6 py-2.5 rounded-xl gradient-pink-purple text-white text-xs font-semibold hover:opacity-95 transition-opacity cursor-pointer"
                 >
                   Clear All Filters
@@ -992,14 +1103,83 @@ export const HomePage: React.FC = () => {
                     profile={profile}
                     isActive={isProfileActive(profile)}
                     onOpenContact={(p) => setContactProfile(p)}
-                    onOpenMessage={(p) => setMessageProfile(p)}
-                    onOpenVideoCall={(p) => handleInitiateCall(p)}
+                    onOpenMessage={(p) => {
+                      setMessageSource('candidate_card');
+                      setMessageProfile(p);
+                    }}
+                    onOpenVideoCall={(p) => handleInitiateCall(p, 'candidate_card')}
                     onOpenStory={(p) => setStoryProfile(p)}
                   />
                 ))}
               </div>
             )}
           </section>
+
+          {/* ==================================================
+              3B. RECENTLY VIEWED PROFILES (Shown only when history exists)
+              ================================================== */}
+          {recentlyViewedProfiles.length > 0 && (
+            <section
+              id="recently-viewed"
+              aria-label="Recently Viewed Profiles"
+              className="border-t border-[#232329] bg-[#050505] py-7 sm:py-11 lg:py-12 relative z-10"
+            >
+              <div className="max-w-7xl mx-auto px-3 min-[390px]:px-4 sm:px-6 lg:px-8">
+                <div className="flex flex-wrap items-end justify-between gap-3 mb-5 sm:mb-7">
+                  <div className="space-y-1">
+                    <div className="flex items-baseline gap-2.5">
+                      <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
+                        Recently Viewed
+                      </h2>
+                      <span className="text-xs font-medium text-[#9A9AA8] tabular-nums">
+                        · {recentlyViewedProfiles.length}{' '}
+                        {recentlyViewedProfiles.length === 1 ? 'Profile' : 'Profiles'}
+                      </span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-[#9A9AA8]">
+                      Pick up where you left off.
+                    </p>
+                  </div>
+
+                  {recentlyViewedProfiles.length > 4 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllRecentlyViewed((prev) => !prev)}
+                      className="min-h-[40px] px-4 py-2 rounded-xl bg-[#111114] hover:bg-[#19191F] text-white border border-[#232329] hover:border-[#FF2878]/50 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                    >
+                      <span>
+                        {showAllRecentlyViewed
+                          ? 'Show Fewer'
+                          : `View All (${recentlyViewedProfiles.length})`}
+                      </span>
+                      <ArrowRight
+                        className={`w-3.5 h-3.5 text-[#FF2878] transition-transform duration-200 ${
+                          showAllRecentlyViewed ? '-rotate-90' : ''
+                        }`}
+                      />
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 min-[390px]:gap-3 sm:gap-5 lg:gap-6">
+                  {visibleRecentlyViewed.map((profile) => (
+                    <ProfileCard
+                      key={`recent-${profile.id || profile.slug}`}
+                      profile={profile}
+                      isActive={isProfileActive(profile)}
+                      onOpenContact={(p) => setContactProfile(p)}
+                      onOpenMessage={(p) => {
+                        setMessageSource('candidate_card');
+                        setMessageProfile(p);
+                      }}
+                      onOpenVideoCall={(p) => handleInitiateCall(p, 'candidate_card')}
+                      onOpenStory={(p) => setStoryProfile(p)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* ==================================================
               4. FEATURED SPOTLIGHT SECTION
@@ -1071,6 +1251,13 @@ export const HomePage: React.FC = () => {
                       <div className="flex flex-wrap items-center gap-2.5">
                         <Link
                           to={`/profile/${spotlightProfile.slug}`}
+                          onClick={() =>
+                            logCarouselInteraction({
+                              carouselName: 'featured_spotlight',
+                              action: 'candidate_select',
+                              targetSlug: spotlightProfile.slug,
+                            })
+                          }
                           className="min-h-[40px] px-5 py-2 rounded-xl gradient-pink-purple hover:opacity-95 text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-opacity active:scale-[0.98]"
                         >
                           <span>View Full Profile</span>
@@ -1079,7 +1266,10 @@ export const HomePage: React.FC = () => {
 
                         <button
                           type="button"
-                          onClick={() => setMessageProfile(spotlightProfile)}
+                          onClick={() => {
+                            setMessageSource('spotlight');
+                            setMessageProfile(spotlightProfile);
+                          }}
                           className="min-h-[40px] px-4 py-2 rounded-xl bg-[#08080A] hover:bg-[#19191F] text-white border border-[#232329] hover:border-[#8B5CF6]/50 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
                         >
                           <MessageCircle className="w-3.5 h-3.5 text-[#8B5CF6]" />
@@ -1088,7 +1278,7 @@ export const HomePage: React.FC = () => {
 
                         <button
                           type="button"
-                          onClick={() => handleInitiateCall(spotlightProfile)}
+                          onClick={() => handleInitiateCall(spotlightProfile, 'spotlight')}
                           className="min-h-[40px] px-4 py-2 rounded-xl bg-[#08080A] hover:bg-[#19191F] text-white border border-[#232329] hover:border-[#FF2878]/50 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
                         >
                           <Phone className="w-3.5 h-3.5 text-[#FF2878]" />
@@ -1100,9 +1290,15 @@ export const HomePage: React.FC = () => {
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
-                            onClick={() =>
-                              setSpotlightIndex((prev) => (prev - 1 + spotlightList.length) % spotlightList.length)
-                            }
+                            onClick={() => {
+                              const nextIdx = (spotlightIndex - 1 + spotlightList.length) % spotlightList.length;
+                              logCarouselInteraction({
+                                carouselName: 'featured_spotlight',
+                                action: 'previous',
+                                targetSlug: spotlightList[nextIdx]?.slug,
+                              });
+                              setSpotlightIndex(nextIdx);
+                            }}
                             className="w-9 h-9 flex items-center justify-center rounded-xl bg-[#08080A] hover:bg-[#19191F] border border-[#232329] text-[#9A9AA8] hover:text-white transition-colors cursor-pointer"
                             aria-label="Previous spotlight candidate"
                           >
@@ -1110,7 +1306,15 @@ export const HomePage: React.FC = () => {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setSpotlightIndex((prev) => (prev + 1) % spotlightList.length)}
+                            onClick={() => {
+                              const nextIdx = (spotlightIndex + 1) % spotlightList.length;
+                              logCarouselInteraction({
+                                carouselName: 'featured_spotlight',
+                                action: 'next',
+                                targetSlug: spotlightList[nextIdx]?.slug,
+                              });
+                              setSpotlightIndex(nextIdx);
+                            }}
                             className="w-9 h-9 flex items-center justify-center rounded-xl bg-[#08080A] hover:bg-[#19191F] border border-[#232329] text-[#9A9AA8] hover:text-white transition-colors cursor-pointer"
                             aria-label="Next spotlight candidate"
                           >
@@ -1294,10 +1498,21 @@ export const HomePage: React.FC = () => {
                   ref={searchModalInputRef}
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    searchSourceRef.current = 'modal';
+                    setSearchQuery(e.target.value);
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      if (searchQuery.trim()) logEvent('search', 'Modal', searchQuery);
+                      const trimmed = searchQuery.trim();
+                      if (trimmed && lastLoggedSearchRef.current !== trimmed) {
+                        lastLoggedSearchRef.current = trimmed;
+                        logSearch({
+                          searchTerm: trimmed,
+                          searchSource: 'modal',
+                          resultsCount: filteredProfiles.length,
+                        });
+                      }
                       setSearchModalOpen(false);
                       scrollToSection('discover');
                     }
@@ -1334,7 +1549,18 @@ export const HomePage: React.FC = () => {
                     <Link
                       key={candidate.id}
                       to={`/profile/${candidate.slug}`}
-                      onClick={() => setSearchModalOpen(false)}
+                      onClick={() => {
+                        const trimmed = searchQuery.trim();
+                        if (trimmed && lastLoggedSearchRef.current !== trimmed) {
+                          lastLoggedSearchRef.current = trimmed;
+                          logSearch({
+                            searchTerm: trimmed,
+                            searchSource: 'modal',
+                            resultsCount: searchModalResults.length,
+                          });
+                        }
+                        setSearchModalOpen(false);
+                      }}
                       className="flex items-center justify-between gap-3 p-2.5 rounded-xl hover:bg-[#19191F] transition-colors group"
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -1503,6 +1729,7 @@ export const HomePage: React.FC = () => {
           profile={messageProfile}
           isOpen={!!messageProfile}
           onClose={() => setMessageProfile(null)}
+          source={messageSource}
         />
       )}
 

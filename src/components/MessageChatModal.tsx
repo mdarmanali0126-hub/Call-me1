@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, Sparkles, ArrowRight, ShieldCheck, MapPin, Video } from 'lucide-react';
 import { Profile, DEFAULT_AVATAR_PLACEHOLDER, isProfileActive } from '../types';
-import { logEvent } from '../lib/analytics';
+import {
+  logEvent,
+  logMessageOpened,
+  logCallStarted,
+  MessageSource,
+} from '../lib/analytics';
 import { useOnlinePresence } from '../lib/presence';
 import { VideoCallModal } from './VideoCallModal';
 import { CallLimitModal } from './CallLimitModal';
@@ -23,16 +28,17 @@ interface MessageChatModalProps {
   profile: Profile;
   isOpen: boolean;
   onClose: () => void;
+  source?: MessageSource;
 }
 
 const AUTOMATED_RESPONSES = [
-  "Hi 😊 Thank you for your message. I’ve already found my life partner. Please feel free to explore other profiles. You might find someone special there. ❤️",
-  "Thank you for reaching out! I’ve already found the person I was looking for. I hope you find someone special here too. ❤️",
-  "Thanks for your message 😊 My journey here has already led me to my life partner. Please feel free to discover other profiles.",
-  "Thank you for stopping by. I’ve already found my life partner. I wish you the best in finding your match. ❤️",
+  "Thank you for your interest! You're welcome to explore more profiles and discover other introductions while you continue your journey.",
+  "Thanks for reaching out! This automated preview lets you test inquiries—feel free to view full profile details or explore more introductions on Call Me.",
+  "Thank you for your message! Continue exploring candidate portfolios and discovering thoughtful introductions across Call Me.",
 ];
 
-const FOLLOWUP_RESPONSE = "I hope you find the right person here. ❤️\nExplore more profiles to continue your journey.";
+const FOLLOWUP_RESPONSE =
+  "Thank you for your note! You're welcome to keep exploring more profiles and introductions on Call Me.";
 
 /**
  * Deterministically picks a response based on the candidate's ID or slug.
@@ -52,8 +58,10 @@ export const MessageChatModal: React.FC<MessageChatModalProps> = ({
   profile,
   isOpen,
   onClose,
+  source = 'profile_detail' as MessageSource,
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [userMessageCount, setUserMessageCount] = useState(0);
@@ -73,7 +81,7 @@ export const MessageChatModal: React.FC<MessageChatModalProps> = ({
     {
       id: 'welcome',
       sender: 'profile',
-      text: "Hi! Thanks for reaching out. Feel free to leave a message here. ❤️",
+      text: "Hi! Welcome to this inquiry preview. Feel free to leave a message or explore more profiles anytime.",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isAutomated: true,
       showCta: false,
@@ -93,13 +101,16 @@ export const MessageChatModal: React.FC<MessageChatModalProps> = ({
         {
           id: `welcome-${profile.id}`,
           sender: 'profile',
-          text: "Hi! Thanks for reaching out. Feel free to leave a message here. ❤️",
+          text: "Hi! Welcome to this inquiry preview. Feel free to leave a message or explore more profiles anytime.",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           isAutomated: true,
           showCta: false,
         },
       ]);
-      logEvent('chat_open', 'Chat', profile.slug);
+      logMessageOpened({
+        profileSlug: profile.slug,
+        source,
+      });
 
       // Auto-focus input after modal transition
       const timer = setTimeout(() => {
@@ -107,7 +118,7 @@ export const MessageChatModal: React.FC<MessageChatModalProps> = ({
       }, 200);
       return () => clearTimeout(timer);
     }
-  }, [isOpen, profile.id, profile.slug]);
+  }, [isOpen, profile.id, profile.slug, source]);
 
   // Clean up any pending typing timers on unmount
   useEffect(() => {
@@ -132,10 +143,14 @@ export const MessageChatModal: React.FC<MessageChatModalProps> = ({
 
   // Start Video Call from inside Chat (Respects global call limits)
   const handleStartCall = () => {
+    logCallStarted({
+      profileSlug: profile.slug,
+      source: 'chat_modal',
+      limitBlocked: !canCall,
+    });
     if (!canCall) {
       setIsLimitModalOpen(true);
     } else {
-      logEvent('chat_video_call_click', 'Chat', profile.slug);
       setIsVideoCallOpen(true);
     }
   };
@@ -202,11 +217,26 @@ export const MessageChatModal: React.FC<MessageChatModalProps> = ({
   const handleExploreOtherProfiles = () => {
     logEvent('explore_profiles_click', 'Chat', profile.slug);
     onClose();
-    navigate('/');
-    setTimeout(() => {
-      const browseSection = document.getElementById('featured') || document.querySelector('main');
-      browseSection?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+
+    const scrollToDiscover = () => {
+      const discoverSection = document.getElementById('discover');
+      if (discoverSection) {
+        discoverSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return true;
+      }
+      return false;
+    };
+
+    if (location.pathname !== '/') {
+      navigate('/#discover');
+      setTimeout(() => {
+        scrollToDiscover();
+      }, 280);
+    } else {
+      setTimeout(() => {
+        scrollToDiscover();
+      }, 120);
+    }
   };
 
   return (
@@ -369,7 +399,7 @@ export const MessageChatModal: React.FC<MessageChatModalProps> = ({
                         onClick={handleExploreOtherProfiles}
                         className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:via-pink-600 hover:to-rose-700 text-white text-xs font-bold shadow-lg shadow-rose-950/50 active:scale-95 transition-all cursor-pointer"
                       >
-                        <span>Explore Other Profiles →</span>
+                        <span>Explore Other Profiles</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </motion.div>

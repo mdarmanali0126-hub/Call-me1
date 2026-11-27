@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   MapPin,
@@ -20,7 +20,9 @@ import {
 import { Profile, DEFAULT_AVATAR_PLACEHOLDER, isProfileActive } from '../types';
 import { fetchPublicProfileBySlug, fetchPublicProfiles, recordProfileView, trackTelemetry } from '../lib/api';
 import { updateSEO, injectProfileJsonLd } from '../lib/seo';
-import { logEvent } from '../lib/analytics';
+import { logProfileView, logProfileDuration, logCallStarted, logRecentlyViewed } from '../lib/analytics';
+import { getSimilarProfiles } from '../lib/recommendations';
+import { recordRecentlyViewed } from '../lib/recentlyViewed';
 import { useOnlinePresence } from '../lib/presence';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
@@ -39,9 +41,11 @@ export const ProfileDetailPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [relatedProfiles, setRelatedProfiles] = useState<Profile[]>([]);
+  const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const lastTrackedProfileSlugRef = useRef<string | null>(null);
 
   // Call Limit Management
   const { callsUsed, callsRemaining, canCall, consumeCall } = useCallLimit();
@@ -59,13 +63,23 @@ export const ProfileDetailPage: React.FC = () => {
   useOnlinePresence(profile);
   const isActive = isProfileActive(profile);
 
-  // Initiate call with limit check
+  // Compute similarity-ranked recommendations cleanly with memoization
+  const relatedProfiles = useMemo(
+    () => getSimilarProfiles(profile, allProfiles, 3),
+    [profile, allProfiles]
+  );
+
+  // Initiate call with limit check + standardized call_started tracking
   const handleInitiateCall = () => {
     if (!profile) return;
+    logCallStarted({
+      profileSlug: profile.slug,
+      source: 'profile_detail',
+      limitBlocked: !canCall,
+    });
     if (!canCall) {
       setIsLimitModalOpen(true);
     } else {
-      logEvent('open_video_call', 'Engagement', profile.slug);
       setIsVideoCallOpen(true);
     }
   };
@@ -74,6 +88,20 @@ export const ProfileDetailPage: React.FC = () => {
     setIsAdInterstitialOpen(false);
     setIsVideoCallOpen(true);
   };
+
+  // Load full profile collection once for similarity scoring (avoids redundant reads on navigation)
+  useEffect(() => {
+    if (allProfiles.length > 0) return;
+    let isMounted = true;
+    fetchPublicProfiles().then((all) => {
+      if (isMounted && Array.isArray(all)) {
+        setAllProfiles(all);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [allProfiles.length]);
 
   useEffect(() => {
     if (!slug) return;
@@ -110,6 +138,28 @@ export const ProfileDetailPage: React.FC = () => {
           profileSlug: data.slug,
           timestamp: new Date().toISOString()
         });
+
+        // Fire profile_view and record Recently Viewed once per unique route slug load
+        if (lastTrackedProfileSlugRef.current !== data.slug) {
+          lastTrackedProfileSlugRef.current = data.slug;
+          logProfileView({
+            profileSlug: data.slug,
+            profession: data.profession,
+            country: data.country,
+            isFeatured: Boolean(data.featured),
+          });
+
+          if (isProfileActive(data)) {
+            const historyResult = recordRecentlyViewed(data);
+            if (historyResult.recorded) {
+              logRecentlyViewed({
+                profileSlug: data.slug,
+                historyCount: historyResult.entries.length,
+                isRevisit: historyResult.isRevisit,
+              });
+            }
+          }
+        }
       })
       .catch((err) => {
         if (!isMounted) return;
@@ -117,17 +167,56 @@ export const ProfileDetailPage: React.FC = () => {
         setLoading(false);
       });
 
-    // Fetch related recommendations
-    fetchPublicProfiles().then((all) => {
-      if (isMounted) {
-        setRelatedProfiles(all.filter((p) => p.slug !== slug).slice(0, 3));
-      }
-    });
-
     return () => {
       isMounted = false;
     };
   }, [slug]);
+
+  // Track active profile engagement duration (visibilitychange + pagehide + unmount, >= 2s, no double-counting)
+  useEffect(() => {
+    if (!profile?.slug) return;
+
+    const targetSlug = profile.slug;
+    let accumulatedMs = 0;
+    let activeStartMs: number | null = document.hidden ? null : Date.now();
+    let hasSent = false;
+
+    const flushDuration = () => {
+      if (hasSent) return;
+      hasSent = true;
+      if (activeStartMs !== null) {
+        accumulatedMs += Date.now() - activeStartMs;
+        activeStartMs = null;
+      }
+      const durationSeconds = Math.round(accumulatedMs / 1000);
+      if (durationSeconds >= 2) {
+        logProfileDuration({
+          profileSlug: targetSlug,
+          durationSeconds,
+        });
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (activeStartMs !== null) {
+          accumulatedMs += Date.now() - activeStartMs;
+          activeStartMs = null;
+        }
+      } else if (!hasSent && activeStartMs === null) {
+        activeStartMs = Date.now();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', flushDuration);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', flushDuration);
+      flushDuration();
+    };
+  }, [profile?.slug]);
 
   if (loading) {
     return (
@@ -537,6 +626,7 @@ export const ProfileDetailPage: React.FC = () => {
         profile={profile}
         isOpen={isMessageOpen}
         onClose={() => setIsMessageOpen(false)}
+        source="profile_detail"
       />
 
       {/* Simulated Video Call Modal */}

@@ -256,7 +256,6 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({
       setVideoPlaybackError(false);
       setIsVideoPlaying(false);
       setSecondsRemaining(CALL_DURATION_LIMIT_SECONDS);
-      logEvent('video_call_open', 'CallMe', profile.slug);
 
       requestCamera();
 
